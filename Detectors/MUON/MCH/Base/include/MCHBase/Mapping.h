@@ -27,7 +27,7 @@ namespace mch
 class Mapping
 {
 
- public:
+public:
   // pad structure in the internal mapping
   struct MpPad {
     uint16_t iDigit;         // index of the corresponding digit
@@ -46,7 +46,8 @@ class Mapping
     TExMap padIndices[2];          // indices+1 of pads from their ID
   };
 
-  static std::vector<std::unique_ptr<MpDE>> readMapping(const char* mapfile);
+  static std::vector<std::unique_ptr<MpDE>> readMapping(const char* mapfile, int readoutVersion=1);
+  static std::vector<std::unique_ptr<MpDE>> loadO2Mapping(int readoutVersion=1);
 
   static bool areOverlapping(float area1[2][2], float area2[2][2], float precision);
 
