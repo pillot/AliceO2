@@ -30,7 +30,7 @@
 
 #include "MCHBase/DigitBlock.h"
 #include "MCHBase/PreClusterBlock.h"
-#include "PreClusterFinder.h"
+#include "MCHPreClustering/PreClusterFinder.h"
 
 namespace o2
 {

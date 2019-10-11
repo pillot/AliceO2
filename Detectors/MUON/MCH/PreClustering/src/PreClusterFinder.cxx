@@ -8,7 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "PreClusterFinder.h"
+#include "MCHPreClustering/PreClusterFinder.h"
 
 #include <chrono>
 #include <memory>
@@ -398,6 +398,7 @@ void PreClusterFinder::readMapping(const char* fileName)
   auto tStart = std::chrono::high_resolution_clock::now();
 
   std::vector<std::unique_ptr<Mapping::MpDE>> mpDEs = Mapping::readMapping(fileName);
+  //std::vector<std::unique_ptr<Mapping::MpDE>> mpDEs = Mapping::loadO2Mapping();
 
   if (mpDEs.size() < SNDEs) {
     LOG(ERROR) << "Invalid binary mapping file " << fileName;
