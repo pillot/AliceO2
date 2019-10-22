@@ -41,6 +41,8 @@ void PreClusterFinder::init(std::string& fileName)
       mPreClusters[iDE][iPlane].reserve(100);
     }
   }
+
+  fpreclus = fopen("preclusters.txt", "w");
 }
 
 //_________________________________________________________________________________________________
@@ -100,16 +102,26 @@ void PreClusterFinder::loadDigits(const DigitStruct* digits, uint32_t nDigits)
 
     const DigitStruct& digit(digits[i]);
 
+    int deid = detectionElementId(digit.uid);
+
     int deIndex = mDEIndices[detectionElementId(digit.uid)];
     assert(deIndex >= 0 && deIndex < SNDEs);
 
     DetectionElement& de(mDEs[deIndex]);
 
-    iPlane = (cathode(digit.uid) == de.mapping->iCath[0]) ? 0 : 1;
-    iPad = de.mapping->padIndices[iPlane].GetValue(digit.uid);
+    uint32_t uid = digit.uid;
+    uid &= 0x3FFFFFFF;
+    iPlane = 0;
+    iPad = de.mapping->padIndices[iPlane].GetValue(uid);
     if (iPad == 0) {
-      LOG(WARN) << "pad ID " << digit.uid << " does not exist in the mapping";
-      continue;
+      iPlane = 1;
+      iPad = de.mapping->padIndices[iPlane].GetValue(uid);
+      if (iPad == 0) {
+        LOG(WARN) << "pad ID " << uid << " does not exist in the mapping";
+        LOG(WARN) << "  DE="<<detectionElementId(uid)<<"  iCath="<<cathode(uid)
+		            <<"  manuid="<<((uid >> 12) & 0xFFF)<<"  manuch="<<((uid >> 24) & 0x3F);
+        continue;
+      }
     }
     --iPad;
 
@@ -285,8 +297,8 @@ int PreClusterFinder::mergePreClusters()
 
 //_________________________________________________________________________________________________
 void PreClusterFinder::mergePreClusters(PreCluster& cluster, std::vector<std::unique_ptr<PreCluster>> preClusters[2],
-                                        int nPreClusters[2], DetectionElement& de, int iPlane,
-                                        PreCluster*& mergedCluster)
+    int nPreClusters[2], DetectionElement& de, int iPlane,
+    PreCluster*& mergedCluster)
 {
   /// merge preclusters on the given plane overlapping with the given one (recursive method)
 
@@ -345,6 +357,11 @@ PreClusterFinder::PreCluster* PreClusterFinder::usePreClusters(PreCluster* clust
 
   cluster->storeMe = true;
 
+  fprintf(fpreclus,"DE=%d  firstPad=%d  lastPad=%d  area=(%0.3f,%0.3f) -> (%0.3f,%0.3f)\n",
+      (int)de.mapping->uid, (int)cluster->firstPad, (int)cluster->lastPad,
+      (float)cluster->area[0][0],(float)cluster->area[1][0],
+      (float)cluster->area[0][1],(float)cluster->area[1][1]);
+
   return cluster;
 }
 
@@ -381,7 +398,7 @@ bool PreClusterFinder::areOverlapping(PreCluster& cluster1, PreCluster& cluster2
     for (int iOrderPad2 = cluster2.firstPad; iOrderPad2 <= cluster2.lastPad; ++iOrderPad2) {
 
       if (Mapping::areOverlapping(de.mapping->pads[de.orderedPads[0][iOrderPad1]].area,
-                                  de.mapping->pads[de.orderedPads[0][iOrderPad2]].area, precision)) {
+          de.mapping->pads[de.orderedPads[0][iOrderPad2]].area, precision)) {
         return true;
       }
     }
@@ -397,12 +414,18 @@ void PreClusterFinder::readMapping(const char* fileName)
 
   auto tStart = std::chrono::high_resolution_clock::now();
 
-  std::vector<std::unique_ptr<Mapping::MpDE>> mpDEs = Mapping::readMapping(fileName);
-  //std::vector<std::unique_ptr<Mapping::MpDE>> mpDEs = Mapping::loadO2Mapping();
-
-  if (mpDEs.size() < SNDEs) {
-    LOG(ERROR) << "Invalid binary mapping file " << fileName;
-    throw runtime_error(fair::mq::tools::ToString("Invalid binary mapping file ", fileName));
+  std::vector<std::unique_ptr<Mapping::MpDE>> mpDEs;
+  bool use_O2_mapping = true;
+  if( use_O2_mapping ) {
+    mpDEs = Mapping::loadO2Mapping();
+    LOG(WARN) << "mpDEs.size()=" << mpDEs.size() << "  SNDEs=" << SNDEs << std::endl;
+  } else {
+    mpDEs = Mapping::readMapping(fileName);
+    LOG(WARN) << "mpDEs.size()=" << mpDEs.size() << "  SNDEs=" << SNDEs << std::endl;
+    if (mpDEs.size() < SNDEs) {
+      LOG(ERROR) << "Invalid binary mapping file " << fileName;
+      throw runtime_error(fair::mq::tools::ToString("Invalid binary mapping file ", fileName));
+    }
   }
 
   mDEIndices.reserve(SNDEs);

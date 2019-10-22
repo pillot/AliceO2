@@ -101,6 +101,8 @@ class PreClusterFinder
 
   int mNPreClusters[SNDEs][2]{};                                     ///< number of preclusters in each cathods of each DE
   std::vector<std::unique_ptr<PreCluster>> mPreClusters[SNDEs][2]{}; ///< preclusters in each cathods of each DE
+
+  FILE* fpreclus;
 };
 
 //_________________________________________________________________________________________________
