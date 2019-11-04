@@ -134,6 +134,11 @@ void PreClusterFinder::loadDigits(const DigitStruct* digits, uint32_t nDigits)
     }
     de.mapping->pads[iPad].iDigit = iDigit;
     de.mapping->pads[iPad].useMe = true;
+    std::cout << "  pad ID " << uid << "  DE="<<detectionElementId(uid)
+              << "  manuid="<<((uid >> 12) & 0xFFF)<<"  manuch="<<((uid >> 24) & 0x3F);
+    printf("  area=(%f,%f) -> (%f,%f)\n",
+        de.mapping->pads[iPad].area[0][0], de.mapping->pads[iPad].area[1][0],
+        de.mapping->pads[iPad].area[0][1], de.mapping->pads[iPad].area[1][1]);
 
     // set this pad as fired
     if (de.nFiredPads[iPlane] < de.firedPads[iPlane].size()) {

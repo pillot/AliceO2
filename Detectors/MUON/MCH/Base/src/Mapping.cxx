@@ -150,10 +150,10 @@ std::vector<std::unique_ptr<Mapping::MpDE>> Mapping::loadO2Mapping(int readoutVe
       auto addPadId = [&readoutVersion,&segment,&de,&pad_ids,&ip,&totalNumberOfPads](int padid) {
 
         // set pad coordinates
-        float padX = segment.padPositionX(padid);
-        float padY = segment.padPositionY(padid);
-        float padSizeX = segment.padSizeX(padid);
-        float padSizeY = segment.padSizeY(padid);
+        double padX = segment.padPositionX(padid);
+        double padY = segment.padPositionY(padid);
+        double padSizeX = segment.padSizeX(padid);
+        double padSizeY = segment.padSizeY(padid);
         de.pads[ip].area[0][0] = padX - padSizeX/2;
         de.pads[ip].area[0][1] = padX + padSizeX/2;
         de.pads[ip].area[1][0] = padY - padSizeY/2;
