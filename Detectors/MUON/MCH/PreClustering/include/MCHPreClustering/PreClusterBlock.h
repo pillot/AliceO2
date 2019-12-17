@@ -19,7 +19,9 @@
 #include <ostream>
 #include <vector>
 
-#include "MCHBase/DigitBlock.h"
+#include "MCHBase/Digit.h"
+#include "MCHPreClustering/PreClusterFinder.h"
+//#include "MCHBase/DigitBlock.h"
 
 namespace o2
 {
@@ -32,7 +34,7 @@ namespace mch
  */
 struct PreClusterStruct {
   uint16_t nDigits;          // number of digits attached to this precluster
-  const DigitStruct* digits; // pointer to the 1st element of the array of digits
+  const Digit* digits; // pointer to the 1st element of the array of digits
 };
 
 /**
@@ -83,13 +85,13 @@ class PreClusterBlock
    * Method to fill the buffer with a new precluster and its first digit
    * @param digit  Reference to the first digit to add to the new precluster.
    */
-  int startPreCluster(const DigitStruct& digit);
+  int startPreCluster(const Digit& digit);
 
   /**
    * Method to add a new digit to the current precluster
    * @param digit  Reference to the digit to add to the current precluster.
    */
-  int addDigit(const DigitStruct& digit);
+  int addDigit(const Digit& digit);
 
   /**
    * Return the number of bytes currently used for the data block in the buffer.
@@ -104,7 +106,7 @@ class PreClusterBlock
   /**
    * Return the vector of preclusters currently stored in the data block.
    */
-  const std::vector<PreClusterStruct>& getPreClusters() const { return mPreClusters; }
+  //const std::vector<PreClusterStruct>& getPreClusters() const { return mPreClusters; }
 
   /**
    * Return the total size of the precluster blocks.
@@ -119,12 +121,17 @@ class PreClusterBlock
              : 0;
   }
 
- private:
+  uint32_t getPreClustersBufferSize(PreClusterFinder& finder);
+  void storePreClusters(PreClusterFinder& finder, char* buf);
+
   /// read the buffer
-  int readBuffer();
+  int readBuffer(std::vector<PreClusterStruct>& preClusters);
+  void readPreClusters(std::vector<PreClusterStruct>& preClusters, char* buffer, uint32_t size);
+
+ private:
 
   static constexpr uint32_t SSizeOfUShort = sizeof(uint16_t);
-  static constexpr uint32_t SSizeOfDigit = sizeof(DigitStruct);
+  static constexpr uint32_t SSizeOfDigit = sizeof(Digit);
 
   /// running pointer on the buffer
   /**
@@ -140,7 +147,7 @@ class PreClusterBlock
   uint16_t* mNPreClusters = nullptr; ///< number of preclusters
   uint16_t* mLastNDigits = nullptr;  ///< number of digits in the last precluster (write mode)
 
-  std::vector<PreClusterStruct> mPreClusters{}; ///< list of preclusters
+  //std::vector<PreClusterStruct> mPreClusters{}; ///< list of preclusters
 };
 
 /// stream operator for printout

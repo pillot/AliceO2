@@ -29,7 +29,8 @@
 #include "Framework/Task.h"
 
 #include "MCHBase/DigitBlock.h"
-#include "MCHBase/PreClusterBlock.h"
+#include "MCHBase/Digit.h"
+#include "MCHPreClustering/PreClusterBlock.h"
 #include "MCHPreClustering/PreClusterFinder.h"
 
 namespace o2
@@ -99,7 +100,10 @@ class PreClusterFinderTask
 
     // load the digits to get the fired pads
     auto digits(reinterpret_cast<const DigitStruct*>(bufferPtrIn));
-    mPreClusterFinder.loadDigits(digits, digitBlock->header.fNrecords);
+
+    // Add digits conversion here
+
+    //mPreClusterFinder.loadDigits(digits, digitBlock->header.fNrecords);
 
     // preclusterize
     int nPreClusters = mPreClusterFinder.run();
@@ -137,7 +141,7 @@ class PreClusterFinderTask
     /// store the preclusters in the given buffer
 
     const PreClusterFinder::PreCluster* cluster(nullptr);
-    const DigitStruct* digit(nullptr);
+    const o2::mch::Digit* digit(nullptr);
     uint32_t* bytesUsed(nullptr);
     uint32_t totalBytesUsed(0);
 
@@ -179,6 +183,9 @@ class PreClusterFinderTask
           }
 
           // add the precluster with its first digit
+
+          // Fix code to use O2 digits
+          /*
           digit = mPreClusterFinder.getDigit(iDE, cluster->firstPad);
           if (mPreClusterBlock.startPreCluster(*digit) < 0) {
             throw length_error("cannot store a new precluster");
@@ -191,6 +198,7 @@ class PreClusterFinderTask
               throw length_error("cannot store a new digit");
             }
           }
+          */
         }
       }
 

@@ -20,8 +20,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "MCHBase/DigitBlock.h"
-#include "MCHBase/Mapping.h"
+#include "MCHPreClustering/PreClusterFinderMapping.h"
+#include "MCHBase/Digit.h"
 
 namespace o2
 {
@@ -30,7 +30,7 @@ namespace mch
 
 class PreClusterFinder
 {
- public:
+public:
   struct PreCluster {
     uint16_t firstPad; // index of first associated pad in the orderedPads array
     uint16_t lastPad;  // index of last associated pad in the orderedPads array
@@ -51,7 +51,7 @@ class PreClusterFinder
   void deinit();
   void reset();
 
-  void loadDigits(const DigitStruct* digits, uint32_t nDigits);
+  void loadDigits(const o2::mch::Digit* digits, uint32_t nDigits);
 
   int run();
 
@@ -59,16 +59,19 @@ class PreClusterFinder
   bool hasPreClusters(int iDE);
   int getNPreClusters(int iDE, int iPlane);
   const PreCluster* getPreCluster(int iDE, int iPlane, int iCluster);
-  const DigitStruct* getDigit(int iDE, uint16_t iOrderedPad);
+  const Digit* getDigit(int iDE, uint16_t iOrderedPad);
 
   /// return the number of detection elements in the internal structure
   static constexpr int getNDEs() { return SNDEs; }
   int getDEId(int iDE);
 
- private:
+
+  uint32_t getNumberOfPreClusters() { return nPreClusters; }
+
+private:
   struct DetectionElement {
     std::unique_ptr<Mapping::MpDE> mapping; // mapping of this DE including the list of pads
-    std::vector<const DigitStruct*> digits; // list of pointers to digits (not owner)
+    std::vector<const Digit*> digits; // list of pointers to digits (not owner)
     uint16_t nFiredPads[2];                 // number of fired pads on each plane
     std::vector<uint16_t> firedPads[2];     // indices of fired pads on each plane
     uint16_t nOrderedPads[2];               // current number of fired pads in the following arrays
@@ -86,7 +89,7 @@ class PreClusterFinder
 
   int mergePreClusters();
   void mergePreClusters(PreCluster& cluster, std::vector<std::unique_ptr<PreCluster>> preClusters[2],
-                        int nPreClusters[2], DetectionElement& de, int iPlane, PreCluster*& mergedCluster);
+      int nPreClusters[2], DetectionElement& de, int iPlane, PreCluster*& mergedCluster);
   PreCluster* usePreClusters(PreCluster* cluster, DetectionElement& de);
   void mergePreClusters(PreCluster& cluster1, PreCluster& cluster2, DetectionElement& de);
 
@@ -101,9 +104,11 @@ class PreClusterFinder
 
   int mNPreClusters[SNDEs][2]{};                                     ///< number of preclusters in each cathods of each DE
   std::vector<std::unique_ptr<PreCluster>> mPreClusters[SNDEs][2]{}; ///< preclusters in each cathods of each DE
+  uint32_t nPreClusters;                  // total number of pre-clusters found
 
   FILE* fpreclus;
 };
+
 
 //_________________________________________________________________________________________________
 inline int PreClusterFinder::getNDEWithPreClusters(int& nUsedDigits)
@@ -147,12 +152,12 @@ inline const PreClusterFinder::PreCluster* PreClusterFinder::getPreCluster(int i
 {
   /// return the preclusters "iCluster" in plane "iPlane" of DE "iDE"
   assert(iDE >= 0 && iDE < SNDEs && iPlane >= 0 && iPlane < 2 && iCluster >= 0 &&
-         iCluster < mNPreClusters[iDE][iPlane]);
+      iCluster < mNPreClusters[iDE][iPlane]);
   return mPreClusters[iDE][iPlane][iCluster].get();
 }
 
 //_________________________________________________________________________________________________
-inline const DigitStruct* PreClusterFinder::getDigit(int iDE, uint16_t iOrderedPad)
+inline const o2::mch::Digit* PreClusterFinder::getDigit(int iDE, uint16_t iOrderedPad)
 {
   /// return the digit associated to the pad registered at the index "iOrderedPad".
   /// This index must be in the range [firstPad, lastPad] associated to a precluster to be stored.

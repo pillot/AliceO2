@@ -9,8 +9,8 @@
 # submit itself to any jurisdiction.
 
 o2_add_library(MCHPreClustering
-               SOURCES src/PreClusterFinder.cxx
-               PUBLIC_LINK_LIBRARIES O2::MCHBase O2::Framework)
+               SOURCES src/PreClusterFinderMapping.cxx src/PreClusterFinder.cxx src/PreClusterBlock.cxx
+               PUBLIC_LINK_LIBRARIES O2::SimulationDataFormat O2::MCHBase O2::Framework)
 
 o2_add_executable(preclusterizer-workflow
                   COMPONENT_NAME mch

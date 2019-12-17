@@ -8,14 +8,32 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/** @file Digit.h
- * C++ simple Muon MCH digit.
- * @author  Michael Winn
- */
-
-#ifndef ALICEO2_MCH_SIMULATION_DIGIT_H_
-#define ALICEO2_MCH_SIMULATION_DIGIT_H_
+#include <memory>
+#include <fstream>
 
 #include "MCHBase/Digit.h"
 
-#endif // ALICEO2_MCH_SIMULATION_DIGIT_H_
+using namespace o2::mch;
+using namespace std;
+
+namespace o2 {
+
+namespace mch {
+
+class DigitsFileReader
+{
+public:
+  DigitsFileReader(std::string inputFileName);
+
+  bool readDigitsFromFile();
+
+  ssize_t getNumberOfDigits();
+  void storeDigits(void* bufferPtr);
+
+private:
+  std::ifstream mInputFile;
+  std::vector< std::unique_ptr<Digit> > digits;
+};
+
+}
+}

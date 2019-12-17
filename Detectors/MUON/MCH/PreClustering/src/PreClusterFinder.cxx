@@ -90,40 +90,27 @@ void PreClusterFinder::reset()
 }
 
 //_________________________________________________________________________________________________
-void PreClusterFinder::loadDigits(const DigitStruct* digits, uint32_t nDigits)
+void PreClusterFinder::loadDigits(const o2::mch::Digit* digits, uint32_t nDigits)
 {
   /// fill the Mapping::MpDE structure with fired pads
 
-  int iPlane(0);
   uint16_t iPad(0);
+  uint16_t iPlane(0);
 
   // loop over digits
   for (uint32_t i = 0; i < nDigits; ++i) {
 
-    const DigitStruct& digit(digits[i]);
+    const o2::mch::Digit& digit(digits[i]);
 
-    int deid = detectionElementId(digit.uid);
+    int deid = digit.getDetID();
 
-    int deIndex = mDEIndices[detectionElementId(digit.uid)];
+    int deIndex = mDEIndices[deid];
     assert(deIndex >= 0 && deIndex < SNDEs);
 
     DetectionElement& de(mDEs[deIndex]);
 
-    uint32_t uid = digit.uid;
-    uid &= 0x3FFFFFFF;
-    iPlane = 0;
-    iPad = de.mapping->padIndices[iPlane].GetValue(uid);
-    if (iPad == 0) {
-      iPlane = 1;
-      iPad = de.mapping->padIndices[iPlane].GetValue(uid);
-      if (iPad == 0) {
-        LOG(WARN) << "pad ID " << uid << " does not exist in the mapping";
-        LOG(WARN) << "  DE="<<detectionElementId(uid)<<"  iCath="<<cathode(uid)
-		            <<"  manuid="<<((uid >> 12) & 0xFFF)<<"  manuch="<<((uid >> 24) & 0x3F);
-        continue;
-      }
-    }
-    --iPad;
+    iPad = digit.getPadID();
+    iPlane = de.mapping->segment->isBendingPad(iPad);
 
     // register this digit
     uint16_t iDigit = de.nFiredPads[0] + de.nFiredPads[1];
@@ -134,8 +121,7 @@ void PreClusterFinder::loadDigits(const DigitStruct* digits, uint32_t nDigits)
     }
     de.mapping->pads[iPad].iDigit = iDigit;
     de.mapping->pads[iPad].useMe = true;
-    std::cout << "  pad ID " << uid << "  DE="<<detectionElementId(uid)
-              << "  manuid="<<((uid >> 12) & 0xFFF)<<"  manuch="<<((uid >> 24) & 0x3F);
+    std::cout << "  pad ID " << iPad << "  DE="<<deid;
     printf("  area=(%f,%f) -> (%f,%f)\n",
         de.mapping->pads[iPad].area[0][0], de.mapping->pads[iPad].area[1][0],
         de.mapping->pads[iPad].area[0][1], de.mapping->pads[iPad].area[1][1]);
@@ -252,7 +238,7 @@ int PreClusterFinder::mergePreClusters()
   /// return the total number of preclusters after merging
 
   PreCluster* cluster(nullptr);
-  int nPreClusters(0);
+  nPreClusters = 0;
 
   // loop over DEs
   for (int iDE = 0; iDE < SNDEs; ++iDE) {

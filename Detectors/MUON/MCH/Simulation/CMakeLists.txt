@@ -26,7 +26,7 @@ o2_add_library(MCHSimulation
                        src/Station345Geometry.h
                        src/Stepper.cxx
                        src/Stepper.h
-               PUBLIC_LINK_LIBRARIES O2::SimulationDataFormat
+               PUBLIC_LINK_LIBRARIES O2::SimulationDataFormat O2::MCHBase
                                      O2::MCHMappingImpl3 O2::DetectorsBase
                                      RapidJSON::RapidJSON)
 

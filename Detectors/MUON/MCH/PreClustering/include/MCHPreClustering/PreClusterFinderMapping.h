@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 
+#include "MCHMappingInterface/Segmentation.h"
 #include "TExMap.h"
 
 namespace o2
@@ -40,6 +41,7 @@ public:
   // DE structure in the internal mapping
   struct MpDE {
     int uid;                       // unique ID
+    std::unique_ptr<mapping::Segmentation> segment;
     uint8_t iCath[2];              // cathode index corresponding to each plane
     uint16_t nPads[2];             // number of pads on each plane
     std::unique_ptr<MpPad[]> pads; // array of pads on both planes

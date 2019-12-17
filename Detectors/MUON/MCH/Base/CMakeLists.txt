@@ -9,7 +9,7 @@
 # submit itself to any jurisdiction.
 
 o2_add_library(MCHBase
-               SOURCES src/Mapping.cxx src/DigitBlock.cxx
-                       src/PreClusterBlock.cxx src/ClusterBlock.cxx
+               SOURCES src/DigitBlock.cxx
+                       src/ClusterBlock.cxx
                        src/TrackBlock.cxx
-               PUBLIC_LINK_LIBRARIES ROOT::Core FairRoot::Base FairMQ::FairMQ O2::MCHMappingInterface O2::MCHMappingImpl3)
+               PUBLIC_LINK_LIBRARIES ROOT::Core FairRoot::Base FairMQ::FairMQ O2::CommonDataFormat O2::GPUCommon O2::MCHMappingInterface O2::MCHMappingImpl3)

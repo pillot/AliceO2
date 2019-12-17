@@ -8,10 +8,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization or
 # submit itself to any jurisdiction.
 
-add_subdirectory(Base)
-add_subdirectory(Contour)
-add_subdirectory(Mapping)
-add_subdirectory(PreClustering)
-add_subdirectory(Simulation)
-add_subdirectory(Tracking)
-add_subdirectory(Tests)
+o2_add_executable(clusterizer-test
+                  COMPONENT_NAME mch
+                  SOURCES src/ClusterizerTest.cxx src/DigitsFileReader.cxx
+                  PUBLIC_LINK_LIBRARIES O2::MCHBase O2::MCHPreClustering)

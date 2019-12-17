@@ -8,8 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "MCHBase/Mapping.h"
-#include "MCHMappingInterface/Segmentation.h"
+#include "MCHPreClustering/PreClusterFinderMapping.h"
 
 #include <cassert>
 #include <fstream>
@@ -134,6 +133,7 @@ std::vector<std::unique_ptr<Mapping::MpDE>> Mapping::loadO2Mapping(int readoutVe
       Mapping::MpDE& de( *(detectionElements.back()) );
 
       de.uid = deid;
+      de.segment = std::make_unique<mapping::Segmentation>(deid);
       de.iCath[0] = 0;
       de.iCath[1] = 1;
 
