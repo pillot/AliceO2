@@ -15,6 +15,7 @@
 #include "MCHPreClustering/PreClusterBlock.h"
 #include "MCHPreClustering/PreClusterFinder.h"
 #include "DigitsFileReader.h"
+#include "ClusteringForTest.h"
 
 using namespace o2::mch;
 using namespace std;
@@ -24,12 +25,14 @@ int main(int argc, char** argv)
   DigitsFileReader digitsReader(argv[1]);
   PreClusterFinder preClusterFinder;
   PreClusterBlock preClusterBlock;
+  Clustering clustering;
   
   std::string fname;
   preClusterFinder.init(fname);
 
   Digit* digitsBuffer = NULL;
   char* preClustersBuffer = NULL;
+  std::vector<Clustering::Cluster> clusters(0);
 
   // load digits from binary input file, block-by-block
   while(digitsReader.readDigitsFromFile()) {
@@ -57,6 +60,12 @@ int main(int argc, char** argv)
 
     std::vector<PreClusterStruct> preClusters;
     preClusterBlock.readPreClusters(preClusters, preClustersBuffer, preClustersSize);
+      
+      printf("\n\n==========\nRunning Clustering\n\n");
+      
+    //Runs the clustering of preClusters following a CenterOfGravity algorithm. Fills clusters.
+    clustering.runFinderCOG(preClusters, clusters);
+    printf("Number of clusters obtained: %lu\n", clusters.size());
 
     break;
   }
