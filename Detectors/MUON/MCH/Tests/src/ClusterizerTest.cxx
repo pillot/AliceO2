@@ -65,7 +65,7 @@ int main(int argc, char** argv)
       
     //Runs the clustering of preClusters following a CenterOfGravity algorithm. Fills clusters.
     clustering.runFinderCOG(preClusters, clusters);
-    printf("Number of clusters obtained: %lu\n", clusters.size());
+    printf("Number of clusters obtained and saved: %lu\n", clusters.size());
 
     break;
   }

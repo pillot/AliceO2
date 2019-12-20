@@ -49,7 +49,7 @@ class Clustering
     void sety(Double_t y) { my = y; }
         
     Double_t getex() const { return mex; }
-    void setex(Double_t x) { mex = ex; }
+    void setex(Double_t ex) { mex = ex; }
         
     Double_t getey() const { return mey; }
     void setey(Double_t ey) { mey = ey; }

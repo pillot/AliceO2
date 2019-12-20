@@ -47,14 +47,14 @@ void Clustering::runFinderCOG(std::vector<PreClusterStruct>& preClusters, std::v
             jete++;
             continue;
         }
-        cout << "preClusters[i].nDigits:" << preClusters[i].nDigits << endl;  //Nombre de digits dans le precluster aue l'on regarde
+        cout << "Precluster avec " << preClusters[i].nDigits << " digits." << endl;  //Nombre de digits dans le precluster aue l'on regarde
         
         std::vector<Digit> preclustertmp;
         const Digit* ptrdigit = preClusters[i].digits;
         
         for (int j=0; j<preClusters[i].nDigits; j++){          //Je récupère les digits et les mets dans un   vecteur de digits, preclustertmp
             digittmp = *ptrdigit;
-            cout << "j:" << j << endl;
+            cout << "Digit numero:" << j << endl;
             cout << "digittmp.getADC():" << digittmp.getADC() << endl;
             cout << "digittmp.getDetID():" << digittmp.getDetID() << endl;
             cout << "digittmp.getPadID():" << digittmp.getPadID() << endl;
@@ -70,10 +70,11 @@ void Clustering::runFinderCOG(std::vector<PreClusterStruct>& preClusters, std::v
         
        // cout << "preclustertmp[0].getADC():" << preclustertmp[0].getADC() << endl;
         clustertmp = FinderCOG(preclustertmp);
-        cout << "COORD X DU CLUSTER AJOUTÉ A CLUSTERS: " << clustertmp.getx() << endl;
+      //  cout << "COORD X DU CLUSTER AJOUTÉ A CLUSTERS: " << clustertmp.getx() << endl;
         clusters.push_back(clustertmp);
     }
     
+    cout << "Nombre de preclusters au départ:" << preClusters.size() << endl;
     cout << "Nombre de preclusters de taille 1, abandonnés:" << jete << endl;
     
 }
@@ -81,6 +82,7 @@ void Clustering::runFinderCOG(std::vector<PreClusterStruct>& preClusters, std::v
 //_________________________________________________________________________________________________
 Clustering::Cluster Clustering::FinderCOG(std::vector<Digit> &precluster)
 {
+    cout << "\n\n==========\nRunning COG Algorithm\n\n" << endl;
 
     Double_t xmin = 1E9;
     Double_t ymin = 1E9;
@@ -96,80 +98,113 @@ Clustering::Cluster Clustering::FinderCOG(std::vector<Digit> &precluster)
     Double_t xsize[] = { 0.0, 0.0 };
     Double_t ysize[] = { 0.0, 0.0 };
     
-    for ( Int_t cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
-     {
-       for ( Int_t i = 0; i < precluster.size(); ++i ) //On boucle sur les digits de notre precluster
-       {
-           int detid = precluster[i].getDetID();
-           int padid = precluster[i].getPadID();
-           mapping::Segmentation pad(detid); // = mapping::Segmentation(detid);
-           
-           //On définit le vecteur position et taille du pad en question
-         std::vector<Double_t> padPosition = {pad.padPositionX(padid), pad.padPositionY(padid)};
-         std::vector<Double_t> padSize = {pad.padSizeX(padid), pad.padSizeY(padid)};
-           
-           //On met à jour les xminmax et yminmax
-         xmin = TMath::Min(padPosition[0]-0.5*padSize[0],xmin);
-         xmax = TMath::Max(padPosition[0]+0.5*padSize[0],xmax);
-         ymin = TMath::Min(padPosition[1]-0.5*padSize[1],ymin);
-         ymax = TMath::Max(padPosition[1]+0.5*padSize[1],ymax);
-           
-           
-         if ( cathode == pad.isBendingPad(padid) ) //On regarde à quelle cathode appartient le pad
+         
+    for ( Int_t i = 0; i < precluster.size(); ++i ) //On boucle sur les digits de notre precluster
+    {
+       int detid = precluster[i].getDetID();
+       int padid = precluster[i].getPadID();
+       cout << "\nDetID:" << detid << " PadID:" << padid << endl;
+       mapping::Segmentation pad(detid); // = mapping::Segmentation(detid);
+       
+       
+       
+       //On définit le vecteur position et taille du pad en question
+     std::vector<Double_t> padPosition = {pad.padPositionX(padid), pad.padPositionY(padid)};
+     std::vector<Double_t> padSize = {pad.padSizeX(padid), pad.padSizeY(padid)};
+       
+       cout << "PadPosition: "<< padPosition[0] << " " << padPosition[1] << endl;
+       cout << "PadSize: "<< padSize[0] << " " << padSize[1] << endl;
+       
+       //On met à jour les xminmax et yminmax
+     xmin = TMath::Min(padPosition[0]-0.5*padSize[0],xmin);
+     xmax = TMath::Max(padPosition[0]+0.5*padSize[0],xmax);
+     ymin = TMath::Min(padPosition[1]-0.5*padSize[1],ymin);
+     ymax = TMath::Max(padPosition[1]+0.5*padSize[1],ymax);
+        
+        for ( Int_t cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
          {
+           
+             if ( cathode == pad.isBendingPad(padid) ) //On regarde à quelle cathode appartient le pad
+             {
+                 cout << "Cathode:" << cathode << endl;
+                 
+                 //On ajoute un terme au numerateur du COG et de la précision
+               x[cathode] += padPosition[0]*precluster[i].getADC();
+               y[cathode] += padPosition[1]*precluster[i].getADC();
+               xsize[cathode] += padSize[0];
+               ysize[cathode] += padSize[1];
+                 
+                 //On ajoute un terme au dénominateur du COG et de la précision
+               charge[cathode] += precluster[i].getADC();
+               multiplicity[cathode] += 1;
+             }
              
-             //On ajoute un terme au numerateur du COG et de la précision
-           x[cathode] += padPosition[0]*precluster[i].getADC();
-           y[cathode] += padPosition[1]*precluster[i].getADC();
-           xsize[cathode] += padSize[0];
-           ysize[cathode] += padSize[1];
-             
-             //On ajoute un terme au dénominateur du COG et de la précision
-           charge[cathode] += precluster[i].getADC();
-           multiplicity[cathode] += 1;
          }
-       }
-         
-         //On fait les calculs de COG et précision
-       if ( charge[cathode] != 0 )
-       {
-         x[cathode] /= charge[cathode];
-         y[cathode] /= charge[cathode];
-       }
-       if ( multiplicity[cathode] != 0 )
-       {
-         xsize[cathode] /= multiplicity[cathode];
-         ysize[cathode] /= multiplicity[cathode];
-       }
-         
-     }
+                
+    }
+           
+    for ( Int_t cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
+    {
+//        cout << "\nCathode:" << cathode << endl;
+//        cout << "x:" << x[cathode] << endl;
+//        cout << "y:" << y[cathode] << endl;
+//        cout << "Charge:" << charge[cathode] << endl;
+//        cout << "xsize:" << xsize[cathode] << endl;
+//        cout << "ysize:" << ysize[cathode] << endl;
+//        cout << "Multiplicity:" << multiplicity[cathode] << endl;
+        
+                 //On fait les calculs de COG et précision
+               if ( charge[cathode] != 0 )
+               {
+                 x[cathode] /= charge[cathode];
+                 y[cathode] /= charge[cathode];
+               }
+               if ( multiplicity[cathode] != 0 )
+               {
+                 xsize[cathode] /= multiplicity[cathode];
+                 ysize[cathode] /= multiplicity[cathode];
+               }
+        cout << "\nPost-calcul cathode:" << cathode << endl;
+        cout << "x:" << x[cathode] << endl;
+        cout << "y:" << y[cathode] << endl;
+        cout << "Charge:" << charge[cathode] << endl;
+        cout << "xsize:" << xsize[cathode] << endl;
+        cout << "ysize:" << ysize[cathode] << endl;
+        cout << "Multiplicity:" << multiplicity[cathode] << endl;
+    }
     
 
   Double_t xCOG = 0.0;
   Double_t yCOG = 0.0;
+  Double_t ex = 0.0;
+  Double_t ey = 0.0;
 
   // On regarde sur quelle cathode la précision est la meilleure pour définir x et y du COG.
   xCOG = ( xsize[0] < xsize[1] ) ? x[0] : x[1];
   yCOG = ( ysize[0] < ysize[1] ) ? y[0] : y[1];
     
+    ex = ( xsize[0] < xsize[1] ) ? xsize[0] : xsize[1];
+    ey = ( ysize[0] < ysize[1] ) ? ysize[0] : ysize[1];
+    
+//    cout << "ex:" << ex << endl;
+//    cout << "ey:" << ey << endl;
+    
     double timestamp = precluster[0].getTimeStamp();  // On récupère le timestamp du premier digit du precluster
-    
-    // On print en console les infos importantes pour pouvoir checker les problèmes
-    printf("\n\nCluster multiplicity %ld (x,y)=(%e,%e) boundaries=(xmin,ymin,xmax,ymax)=(%e,%e,%e,%e)"
-                  " (x0,y0,x1,y1)=(%e,%e,%e,%e) timestamp = %lf \n\n",
-                  precluster.size(),xCOG,yCOG,xmin,ymin,xmax,ymax,
-                  x[0],y[0],x[1],y[1],timestamp);
-    
+//
+//    // On print en console les infos importantes pour pouvoir checker les problèmes
+//    printf("\n\nCluster multiplicity %ld (x,y)=(%e,%e) boundaries=(xmin,ymin,xmax,ymax)=(%e,%e,%e,%e)"
+//                  " (x0,y0,x1,y1)=(%e,%e,%e,%e) timestamp = %lf \n\n",
+//                  precluster.size(),xCOG,yCOG,xmin,ymin,xmax,ymax,
+//                  x[0],y[0],x[1],y[1],timestamp);
+//
     //On remplit un cluster avec les infos nécessaires
     cluster.setx(xCOG);
     cluster.sety(yCOG);
-    cluster.setex(( xsize[0] < xsize[1] ) ? xsize[0] : xsize[1]);
-    cluster.setey(( ysize[0] < ysize[1] ) ? ysize[0] : ysize[1]);
+    cluster.setex(ex);
+    cluster.setey(ey);
     cluster.settimestamp(timestamp);    // En première approx. on peut affecter le timestamp du pre;ier digit au cluster
     
-    printf("\n\nCluster multiplicity %ld (x,y)=(%e,%e) precision=(ex,ey)=(%e,%e)"
-    "timestamp = %lf \n\n",
-    precluster.size(),cluster.getx(),cluster.gety(),cluster.getex(),cluster.getey(),cluster.gettimestamp());
+    printf("\n\nCluster multiplicity %ld \n(x,y)=(%e,%e) \nboundaries=(xmin,ymin,xmax,ymax)=(%e,%e,%e,%e) \nprecision=(ex,ey)=(%e,%e) \ntimestamp = %lf \n\n",precluster.size(),cluster.getx(),cluster.gety(),xmin,ymin,xmax,ymax,cluster.getex(),cluster.getey(),cluster.gettimestamp());
     
     return cluster;
     
