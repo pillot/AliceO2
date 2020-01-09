@@ -15,7 +15,7 @@
 #include "MCHPreClustering/PreClusterBlock.h"
 #include "MCHPreClustering/PreClusterFinder.h"
 #include "DigitsFileReader.h"
-#include "ClusteringForTest.h"
+#include "MCHClustering/ClusteringForTest.h"
 
 using namespace o2::mch;
 using namespace std;
@@ -64,8 +64,12 @@ int main(int argc, char** argv)
       printf("\n\n==========\nRunning Clustering\n\n");
       
     //Runs the clustering of preClusters following a CenterOfGravity algorithm. Fills clusters.
-    clustering.runFinderCOG(preClusters, clusters);
-    printf("Number of clusters obtained and saved: %lu\n", clusters.size());
+//    clustering.runFinderCOG(preClusters, clusters);
+//    printf("Number of clusters obtained and saved: %lu\n", clusters.size());
+      
+   clustering.runFinderSimpleFit(preClusters, clusters);
+      
+ //     clustering.runFinderGaussianFit(preClusters, clusters);
 
     break;
   }

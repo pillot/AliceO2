@@ -84,14 +84,22 @@ class Clustering
     
     void runFinderCOG(std::vector<PreClusterStruct>& preClusters, std::vector<Cluster>& clusters);
     Clustering::Cluster FinderCOG(std::vector<Digit> &precluster);
-//    
-//    Clustering::Cluster* runOldFinderSimpleFit(std::vector<Digit> &preclusterslist, std::vector<int> &preclusterssizes);
-//    Clustering::Cluster* runFinderSimpleFit(std::string& buffer);
-//    Clustering::Cluster* FinderSimpleFit(std::vector<Digit> &precluster, Clustering::Cluster* clustertmp);
-//    float Chi2Mathieson(int cathode, Double_t chargetot, std::vector<Digit> &precluster, Clustering::Cluster* clustertmp, float xhit, float yhit, float Kx3, float Ky3);
-//    
-//    float IntMathiesonXY(float x1, float y1, float x2, float y2, float Kx3, float Ky3);
-//    
+
+    void runFinderSimpleFit(std::vector<PreClusterStruct>& preClusters, std::vector<Cluster>& clusters);
+    Clustering::Cluster FinderSimpleFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
+    Double_t Chi2Mathieson(int cathode, Double_t chargetot, std::vector<Digit> &precluster, Clustering::Cluster clustertmp, Double_t xhit, Double_t yhit, Double_t Kx3, Double_t Ky3);
+    Double_t IntMathiesonXY(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t Kx3, Double_t Ky3);
+    
+//    void FitFunction(Double_t& sum, Double_t* par);
+//    Clustering::Cluster ComputePosition(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
+    
+//    void runFinderGaussianFit(std::vector<PreClusterStruct>& preClusters, std::vector<Cluster>& clusters);
+//    Clustering::Cluster FinderGaussianFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
+//    Double_t Chi2Gauss(int cathode, Double_t chargetot, std::vector<Digit> &precluster, Clustering::Cluster clustertmp, Double_t xhit, Double_t yhit, Double_t sigx, Double_t sigy);
+//    Double_t IntGaussXY(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t sigx, Double_t sigy);
+    
+    
+
 //    Clustering::Cluster* runFinderGaussianFit(std::string& buffer);
 //    Clustering::Cluster* FinderGaussianFit(std::vector<Digit> &precluster, Clustering::Cluster* clustertmp);
 //    float Chi2Gauss(int cathode, Double_t chargetot, std::vector<Digit> &precluster, Clustering::Cluster* clustertmp, float xhit, float yhit, float sigx, float sigy);
