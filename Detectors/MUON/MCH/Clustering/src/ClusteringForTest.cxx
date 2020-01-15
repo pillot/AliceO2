@@ -249,6 +249,7 @@ Clustering::Cluster Clustering::FinderCOG(std::vector<Digit> &precluster)
 //_________________________________________________________________________________________________
 void Clustering::runFinderSimpleFit(std::vector<PreClusterStruct>& preClusters, std::vector<Cluster>& clusters)
 {
+    cout << "\n\n==========\nRunning runFinderSimpleFit Algorithm\n\n" << endl;
     cout << "preClusters.size():" << preClusters.size() << endl;
     int sizedigit;
     int jete = 0;
@@ -286,7 +287,7 @@ void Clustering::runFinderSimpleFit(std::vector<PreClusterStruct>& preClusters, 
        // cout << "preclustertmp[0].getADC():" << preclustertmp[0].getADC() << endl;
         clustertmpCOG = FinderCOG(preclustertmp);
       //  cout << "COORD X DU CLUSTER AJOUTÉ A CLUSTERS: " << clustertmp.getx() << endl;
-        if(preClusters.size() < 3){
+        if(preclustertmp.size() < 3){
             clustertmp = clustertmpCOG;
         }
         else{
