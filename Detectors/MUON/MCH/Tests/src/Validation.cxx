@@ -50,10 +50,10 @@ void myMath(){
 //    func = &Validation::myMathieson2D;
 //    TF2 *f1 = new TF2("myMath",(this->*func),0,10,0,10,4);
 
-    TF2 *f1 = new TF2("myMath",myMathieson2D,0,10,0,10,4);
+    TF2 *f1 = new TF2("myMath",myMathieson2D,-10,10,-10,10,4);
     f1->SetParameters(0.5085, 0.5840, 0., 0.);
     f1->SetParNames("K3x", "K3y", "Mean x", "Mean y");
-   // f1->Draw();
+    //f1->Draw("colz");
 }
 
 void Validation::PlotMathieson2D(){
@@ -88,7 +88,10 @@ void Validation::PlotMathieson2D(){
     
     //Création et remplissage histogrammes bending
     
+    cout << "Generating histograms bending and non-bending..."<< endl;
+    
     hb = new TH2F("hb","hb",lowxsb.size()-1,xlowsb,lowysb.size()-1,ylowsb);
+    gRandom->SetSeed(0);
     hb->FillRandom("myMath", /*nsamples=*/2000);
     
     TCanvas *c2 = new TCanvas("c2", "The road to PlotDorado",
@@ -154,6 +157,8 @@ void Validation::PlotMathieson2D(){
     
     //Remplissage digits bending plane
     
+    cout << "Filling digits from bending plane..." << endl;
+    
     for(int binx = 1; binx<lowxsb.size(); binx++){
         for(int biny = 1; biny<lowysb.size(); biny++){
             bincontent = hb->GetBinContent(binx,biny);
@@ -168,15 +173,17 @@ void Validation::PlotMathieson2D(){
             padid = catsegb.findPadByPosition(binxcent,binycent);
             charge[padid] += bincontent;
             
-            if(charge[padid] > 2){
-               cout << "Content of bending bin (binx= " << binx << ", biny= " << biny << "): " << bincontent << endl;
-               cout << "Center of bending bin (binx= " << binx << ", biny= " << biny << "): (" << binxcent << "," << binycent << ")" << endl;
-               cout << "Padid: " << padid << "  Charge: " << charge[padid] <<endl;
-           }
+//            if(charge[padid] > 2){
+//               cout << "Content of bending bin (binx= " << binx << ", biny= " << biny << "): " << bincontent << endl;
+//               cout << "Center of bending bin (binx= " << binx << ", biny= " << biny << "): (" << binxcent << "," << binycent << ")" << endl;
+//               cout << "Padid: " << padid << "  Charge: " << charge[padid] <<endl;
+//           }
         }
     }
     
     //Remplissage digits non-bending plane
+    
+    cout << "Filling digits from non-bending plane..." << endl;
         
         for(int binx = 1; binx<lowxsnb.size(); binx++){
             for(int biny = 1; biny<lowysnb.size(); biny++){
@@ -187,11 +194,11 @@ void Validation::PlotMathieson2D(){
                 padid = catsegnb.findPadByPosition(binxcent,binycent) + nopadsb;
                 charge[padid] += bincontent;
                 
-                if(charge[padid] > 2){
-                    cout << "Content of non-bending bin (binx= " << binx << ", biny= " << biny << "): " << bincontent << endl;
-                    cout << "Center of non-bending bin (binx= " << binx << ", biny= " << biny << "): (" << binxcent << "," << binycent << ")" << endl;
-                    cout << "Padid: " << padid << "  Charge: " << charge[padid] <<endl;
-                }
+//                if(charge[padid] > 2){
+//                    cout << "Content of non-bending bin (binx= " << binx << ", biny= " << biny << "): " << bincontent << endl;
+//                    cout << "Center of non-bending bin (binx= " << binx << ", biny= " << biny << "): (" << binxcent << "," << binycent << ")" << endl;
+//                    cout << "Padid: " << padid << "  Charge: " << charge[padid] <<endl;
+//                }
             }
         }
     
@@ -238,7 +245,7 @@ void Validation::InfoDE809b(){
     int valuesy = 0;
     
     
-    cout << "There are " << nopads << " pads" << endl;
+    cout << "There are " << nopads << " pads on bending plane" << endl;
     
     for(int catPadindex = 0; catPadindex<nopads; catPadindex++){
         padposx = catseg.padPositionX(catPadindex);
@@ -349,7 +356,7 @@ void Validation::InfoDE809nb(){
     int valuesy = 0;
     
     
-    cout << "There are " << nopads << " pads" << endl;
+    cout << "There are " << nopads << " pads on non-bending plane" << endl;
     
     for(int catPadindex = 0; catPadindex<nopads; catPadindex++){
         padposx = catseg.padPositionX(catPadindex);
@@ -421,6 +428,9 @@ void Validation::InfoDE809nb(){
 }
 
 void Validation::TestClustering(){
+    
+    cout << "Filling buffer of digits..." << endl;
+    
     nDigits = getNumberOfDigits();
     digitsBuffer = (mch::Digit*)realloc(digitsBuffer, sizeof(mch::Digit) * nDigits);
     storeDigits(digitsBuffer);

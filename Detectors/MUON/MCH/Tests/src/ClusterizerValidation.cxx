@@ -40,11 +40,15 @@ int main(int argc, char** argv){
     Validation validation;
     
     TApplication app ("app",&argc,argv);
-    cout << "VALIDATION" << endl;
+    cout << "\n\n==========\nRunning the Validation procedure of (pre)clustering" << endl;
     
+    cout << "\n\n==========\nGetting info for Bending plane\n\n" << endl;
    validation.InfoDE809b();
+    cout << "\n\n==========\nGetting info for Non-Bending plane\n\n" << endl;
    validation.InfoDE809nb();
+    cout << "\n\n==========\nHit generation, histograms plotting and digitization\n\n" << endl;
    validation.PlotMathieson2D();
+    cout << "\n\n==========\nTesting the (pre)clustering\n\n" << endl;
    validation.TestClustering();
     
    app.Run(kTRUE);
