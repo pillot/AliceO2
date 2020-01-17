@@ -364,8 +364,8 @@ Clustering::Cluster Clustering::FinderSimpleFit(std::vector<Digit> &precluster, 
         Double_t Kx3 = 0.5085;
         Double_t Ky3 = 0.5840;
         
-        Double_t pasxhit = 0.2;
-        Double_t pasyhit = 0.2;
+        Double_t pasxhit = 0.0001;
+        Double_t pasyhit = 0.0001;
         
         int compteurboucle = 0;
         
@@ -374,8 +374,8 @@ Clustering::Cluster Clustering::FinderSimpleFit(std::vector<Digit> &precluster, 
         Double_t NewChiDeux = 100;
         Double_t deltaxhit = 100;
         Double_t deltayhit = 100;
-        Double_t limitstrict = 0.0001;
-        Double_t limitlean = 0.005;
+        Double_t limitstrict = 0.000001;
+        Double_t limitlean = 0.0001;
         Double_t limitx = 0.;
         Double_t limity = 0.;
         
@@ -400,10 +400,10 @@ Clustering::Cluster Clustering::FinderSimpleFit(std::vector<Digit> &precluster, 
 
 //            float dChidKy3 = (Chi2Mathieson(cathode, precluster, clustertmp, xhit[cathode], yhit[cathode], Kx3, Ky3+pasKy3)-Chi2Mathieson(cathode, precluster, clustertmp, xhit[cathode], yhit[cathode], Kx3, Ky3))/pasKy3;
 
-            deltaxhit = pasxhit*dChidxhit*1000;
-            deltayhit = pasyhit*dChidyhit*1000;
-            xhit[cathode] = xhit[cathode] - pasxhit*dChidxhit*1000;
-            yhit[cathode] = yhit[cathode] - pasyhit*dChidyhit*1000;
+            deltaxhit = pasxhit*dChidxhit*1;
+            deltayhit = pasyhit*dChidyhit*1;
+            xhit[cathode] = xhit[cathode] - pasxhit*dChidxhit*1;
+            yhit[cathode] = yhit[cathode] - pasyhit*dChidyhit*1;
 //            Kx3 = Kx3 - pasKx3*dChidKx3;
 //            Ky3 = Ky3 - pasKy3*dChidKy3;
             
@@ -420,8 +420,8 @@ Clustering::Cluster Clustering::FinderSimpleFit(std::vector<Digit> &precluster, 
             cout << "OldChiDeux: " << OldChiDeux << endl;
             cout << "NewChiDeux: " << NewChiDeux << endl;
             
-            if(compteurboucle > 1000){
-                cout << "Déjà 1.000 boucles pour trouver Chi2, utilisation résultats COG..." << endl;
+            if(compteurboucle > 10000){
+                cout << "Déjà 10.000 boucles pour trouver Chi2, utilisation résultats COG..." << endl;
                 return clustertmpCOG;
             }
         }
@@ -453,6 +453,8 @@ Clustering::Cluster Clustering::FinderSimpleFit(std::vector<Digit> &precluster, 
     cluster.setey(ey);
     cluster.settimestamp(timestamp);    // En première approx. on peut affecter le timestamp du pre;ier digit au cluster
     
+    printf("\n\nCluster par COG:\nCluster multiplicity %ld \n(x,y)=(%e,%e) \nprecision=(ex,ey)=(%e,%e) \ntimestamp = %lf \n\n",precluster.size(),clustertmpCOG.getx(),clustertmpCOG.gety(),clustertmpCOG.getex(),clustertmpCOG.getey(),clustertmpCOG.gettimestamp());
+    
             printf("\n\nCluster par simple fit:\nCluster multiplicity %ld \n(x,y)=(%e,%e) \nprecision=(ex,ey)=(%e,%e) \ntimestamp = %lf \n\n",precluster.size(),cluster.getx(),cluster.gety(),cluster.getex(),cluster.getey(),cluster.gettimestamp());
     
     return cluster;
@@ -480,7 +482,7 @@ Double_t Clustering::Chi2Mathieson(int cathode, Double_t chargetot, std::vector<
             std::vector<Double_t> lowerLeft = {xhit - padPosition[0] - 0.5*padSize[0], yhit - padPosition[1] - 0.5*padSize[1]};
             std::vector<Double_t> upperRight= {lowerLeft[0] + padSize[0], lowerLeft[1] + padSize[1]};
             
-            Double_t qfit = IntMathiesonXY(lowerLeft[0], lowerLeft[1], upperRight[0], upperRight[1], Kx3, Ky3)/chargetot;
+            Double_t qfit = IntMathiesonXY(lowerLeft[0], lowerLeft[1], upperRight[0], upperRight[1], Kx3, Ky3);
 
             Double_t qtrue = precluster[i].getADC()/chargetot;
             
@@ -494,7 +496,7 @@ Double_t Clustering::Chi2Mathieson(int cathode, Double_t chargetot, std::vector<
 }
 
 
-//Il faudra un visuel
+
 
 
 //_________________________________________________________________________________________________
