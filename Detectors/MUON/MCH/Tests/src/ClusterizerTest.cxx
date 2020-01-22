@@ -67,9 +67,14 @@ int main(int argc, char** argv)
 //    clustering.runFinderCOG(preClusters, clusters);
 //    printf("Number of clusters obtained and saved: %lu\n", clusters.size());
       
+      // Fit Mathieson
    clustering.runFinderSimpleFit(preClusters, clusters);
       
+      // Fit Simple Gaussienne
  //     clustering.runFinderGaussianFit(preClusters, clusters);
+      
+      // Fit Double Gaussienne
+//     clustering.runFinderDoubleGaussianFit(preClusters, clusters);
 
     break;
   }
