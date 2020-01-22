@@ -32,6 +32,9 @@ namespace mch {
 
 Validation::Validation(){};
 
+
+//PART WITH DEFINITION OF THE MATHIESON AND THE IMPACT POINTS
+
 Double_t myMathieson2D(Double_t *x, Double_t *par){
     Double_t pitch = 0.25;
     Float_t xx = x[0]-par[2];
@@ -46,6 +49,7 @@ Double_t myMathieson2D(Double_t *x, Double_t *par){
     return f;
 }
 
+//________________________________________________________________________________________
 Double_t myMathieson2D2hits(Double_t *x, Double_t *par){
     Double_t pitch = 0.25;
     Float_t xx1 = x[0]-par[2];
@@ -64,10 +68,8 @@ Double_t myMathieson2D2hits(Double_t *x, Double_t *par){
     return f;
 }
 
+//________________________________________________________________________________________
 void myMath(){
-//    Double_t ( Validation::*func ) ( Double_t*, Double_t* );
-//    func = &Validation::myMathieson2D;
-//    TF2 *f1 = new TF2("myMath",(this->*func),0,10,0,10,4);
 
     // ONE HIT
     
@@ -83,6 +85,14 @@ void myMath(){
     //f1->Draw("colz");
 }
 
+
+
+
+
+//PART WITH: - PLOTTING OF THE MATHIESON FOLLOWING DEFINITION AND MAPPING OF A GIVEN DETECTOR (819)
+//           - DIGIT CREATION
+
+//________________________________________________________________________________________
 void Validation::PlotMathieson2D(){
     
     digits.clear();
@@ -147,18 +157,12 @@ void Validation::PlotMathieson2D(){
     hnb = new TH2F("hnb","hnb",lowxsnb.size()-1,xlowsnb,lowysnb.size()-1,ylowsnb);
     hnb->FillRandom("myMath", /*nsamples=*/2000);
     
-//    TCanvas *c21 = new TCanvas("c21", "The road to PlotDorado",
-//                              200,10,600,400);
-    
     c2->cd(2);
     hnb->SetTitle("Mathieson 2D Distribution - Non-Bending plane - DE819");
     hnb->Draw("LEGO2");
 
     c2->Update();
     c2->Draw();
-//
-//    TCanvas *c31 = new TCanvas("c31", "The road to PlotDorado",
-//    200,10,600,400);
     
     c3->cd(2);
     hnb->Draw("colz");
@@ -231,7 +235,6 @@ void Validation::PlotMathieson2D(){
     
     cout << "Nombre de bins bending : " << nbbinsb << " Nombre de pads bending : " << nopadsb << endl;
     cout << "Nombre de bins non-bending : " << nbbinsnb << " Nombre de pads non-bending : " << nopadsnb << endl;
-   // cout << "IL Y A UN PB SUR LE NON BENDING (MERGING DE BINS A FAIRE). On a mergé les bins artificiellement lors de la formation des digits." << endl;
     
     for(int i=0; i<nopadsb + nopadsnb; i++){
         if(charge[i] > 2){  //Couper le bruit type
@@ -252,6 +255,12 @@ void Validation::PlotMathieson2D(){
     
 }
 
+
+
+
+//PART GETTING THE MAPPING INFO FOR THE TWO CATHODES OF A DETECTOR
+
+//________________________________________________________________________________________
 void Validation::InfoDE819b(){
     
     int detElemId =819;
@@ -341,28 +350,10 @@ void Validation::InfoDE819b(){
 //        cout << lowysb[i] << endl;
 //    }
     
-
-//    int b, nb;
-//    bool found = seg.findPadPairByPosition(x, y, b, nb);
-//    int nopads = seg.nofPads();
-//    int nods = seg.nofDualSampas();
-//
-//    if (seg.isValid(b)) {
-//    std::cout << "There is a bending pad at position " << x << "," << y << "\n"
-//    << " which belongs to dualSampa " << seg.padDualSampaId(b)
-//    << " and has a PadId " << b
-//    << " and has a x-size of " << seg.padSizeX(b) << " cm\n"
-//    << " and has a y-size of " << seg.padSizeY(b) << " cm\n"
-//    << " and has a x-position of " << seg.padPositionX(b) << " cm\n"
-//    << " and has a y-position of " << seg.padPositionY(b) << " cm\n"
-//    << "Il y a" << nopads << "pads au total sur les deux faces"
-//        << "et" << nods << "DualSampas";
-//    }
-
-    //assert(b == seg.findPadByFEE(76, 9));
     
 }
 
+//________________________________________________________________________________________
 void Validation::InfoDE819nb(){
     
     int detElemId =819;
@@ -454,6 +445,16 @@ void Validation::InfoDE819nb(){
     
 }
 
+
+
+
+
+
+
+
+//PART RUNNING THE PRECLUSTERING AND CLUSETRING FOLLOWING CHOSEN METHOD, BASED ON DIGITS OBTAINED FROM ABOVE
+
+//________________________________________________________________________________________
 void Validation::TestClustering(){
     
     cout << "Filling buffer of digits..." << endl;
@@ -491,23 +492,31 @@ void Validation::TestClustering(){
           
           printf("\n\n==========\nRunning Clustering\n\n");
           
-        //Runs the clustering of preClusters following a CenterOfGravity algorithm. Fills clusters.
+    
+    //To run COG Clustering
 //        clustering.runFinderCOG(preClusters, clusters);
 //        printf("Number of clusters obtained and saved: %lu\n", clusters.size());
     
+    
+    //To run Mathieson fit Clustering
  //      clustering.runFinderSimpleFit(preClusters, clusters);
           
+    
+    //To run Gaussian fit Clustering
   //        clustering.runFinderGaussianFit(preClusters, clusters);
     
+    
+    //To run Double Gaussian fit Clustering
     clustering.runFinderDoubleGaussianFit(preClusters, clusters);
 }
 
+//________________________________________________________________________________________
 ssize_t Validation::getNumberOfDigits()
 {
   return digits.size();
 }
 
-
+//________________________________________________________________________________________
 void Validation::storeDigits(void* bufferPtr)
 {
   mch::Digit* ptr = (mch::Digit*)bufferPtr;
@@ -518,6 +527,18 @@ void Validation::storeDigits(void* bufferPtr)
   }
 }
 
+
+
+
+
+
+
+
+
+
+//PART PLOTTING RESULTS OF RESIDUALS MEASUREMENTS OBTAINED MANUALLY (NOT IMPORTANT HERE)
+
+//________________________________________________________________________________________
 void ResidualsCOG(){
     
     const Int_t n = 15;
