@@ -43,13 +43,19 @@ int main(int argc, char** argv){
     cout << "\n\n==========\nRunning the Validation procedure of (pre)clustering" << endl;
     
     cout << "\n\n==========\nGetting info for Bending plane\n\n" << endl;
-   validation.InfoDE809b();
+   validation.InfoDE819b();
     cout << "\n\n==========\nGetting info for Non-Bending plane\n\n" << endl;
-   validation.InfoDE809nb();
+   validation.InfoDE819nb();
     cout << "\n\n==========\nHit generation, histograms plotting and digitization\n\n" << endl;
    validation.PlotMathieson2D();
     cout << "\n\n==========\nTesting the (pre)clustering\n\n" << endl;
    validation.TestClustering();
+    
+    cout << "\n\n==========\nValidation procedure terminated\n\n" << endl;
+    
+   //ResidualsCOG();
+    
+   // ResidualsCompare();
     
    app.Run(kTRUE);
     

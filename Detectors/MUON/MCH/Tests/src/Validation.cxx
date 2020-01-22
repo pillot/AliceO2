@@ -19,6 +19,7 @@
 #include "TH2.h"
 #include "TF2.h"
 #include "TGraphErrors.h"
+#include "TGraph2DErrors.h"
 #include "TLegend.h"
 #include <cmath>
 
@@ -45,14 +46,40 @@ Double_t myMathieson2D(Double_t *x, Double_t *par){
     return f;
 }
 
+Double_t myMathieson2D2hits(Double_t *x, Double_t *par){
+    Double_t pitch = 0.25;
+    Float_t xx1 = x[0]-par[2];
+    Float_t yy1 = x[1]-par[3];
+    Float_t xx2 = x[0]-par[4];
+    Float_t yy2 = x[1]-par[5];
+    Double_t K2x = M_PI*0.5*(1-0.5*sqrt(par[0]));
+    Double_t K1x = K2x * sqrt(par[0]) / 4 / atan(sqrt(par[0]));
+    Double_t fx1 = K1x * ((1-pow(tanh(K2x*xx1/pitch),2))/(1+ par[0]*pow(tanh(K2x*xx1/pitch),2)));
+    Double_t K2y = M_PI*0.5*(1-0.5*sqrt(par[1]));
+    Double_t K1y = K2y * sqrt(par[1]) / 4 / atan(sqrt(par[1]));
+    Double_t fy1 = K1y * ((1-pow(tanh(K2y*yy1/pitch),2))/(1+ par[1]*pow(tanh(K2y*yy1/pitch),2)));
+    Double_t fx2 = K1x * ((1-pow(tanh(K2x*xx2/pitch),2))/(1+ par[0]*pow(tanh(K2x*xx2/pitch),2)));
+    Double_t fy2 = K1y * ((1-pow(tanh(K2y*yy2/pitch),2))/(1+ par[1]*pow(tanh(K2y*yy2/pitch),2)));
+    Double_t f = par[6]*fx1*fy1 + par[7]*fx2*fy2;
+    return f;
+}
+
 void myMath(){
 //    Double_t ( Validation::*func ) ( Double_t*, Double_t* );
 //    func = &Validation::myMathieson2D;
 //    TF2 *f1 = new TF2("myMath",(this->*func),0,10,0,10,4);
 
-    TF2 *f1 = new TF2("myMath",myMathieson2D,-10,10,-10,10,4);
-    f1->SetParameters(0.5085, 0.5840, 0., 0.);
-    f1->SetParNames("K3x", "K3y", "Mean x", "Mean y");
+    // ONE HIT
+    
+//    TF2 *f1 = new TF2("myMath",myMathieson2D,-10,10,-10,10,4);
+//    f1->SetParameters(0.5085, 0.5840, 0, 0.5);
+//    f1->SetParNames("K3x", "K3y", "Mean x", "Mean y");
+    
+    // TWO HITS
+    
+    TF2 *f1 = new TF2("myMath",myMathieson2D2hits,-10,10,-10,10,8);
+    f1->SetParameters(0.5085, 0.5840, 1, 1, 2, 5, 1, 1.5);
+    f1->SetParNames("K3x", "K3y", "Mean1 x", "Mean1 y", "Mean2 x", "Mean2 y", "Charge1", "Charge2");
     //f1->Draw("colz");
 }
 
@@ -64,8 +91,8 @@ void Validation::PlotMathieson2D(){
     TH2F* hnb(NULL);
     myMath();
     
-    o2::mch::mapping::CathodeSegmentation catsegb(809, kTRUE);
-    o2::mch::mapping::CathodeSegmentation catsegnb(809, kFALSE);
+    o2::mch::mapping::CathodeSegmentation catsegb(819, kTRUE);
+    o2::mch::mapping::CathodeSegmentation catsegnb(819, kFALSE);
 
     int nopadsb = catsegb.nofPads();
     int nopadsnb = catsegnb.nofPads();
@@ -99,7 +126,7 @@ void Validation::PlotMathieson2D(){
     c2->Divide(1,2);
     c2->cd(1);
     
-    hb->SetTitle("Mathieson 2D Distribution - Bending plane - DE809");
+    hb->SetTitle("Mathieson 2D Distribution - Bending plane - DE819");
     hb->Draw("LEGO2");
     
     c2->Update();
@@ -124,7 +151,7 @@ void Validation::PlotMathieson2D(){
 //                              200,10,600,400);
     
     c2->cd(2);
-    hnb->SetTitle("Mathieson 2D Distribution - Non-Bending plane - DE809");
+    hnb->SetTitle("Mathieson 2D Distribution - Non-Bending plane - DE819");
     hnb->Draw("LEGO2");
 
     c2->Update();
@@ -204,7 +231,7 @@ void Validation::PlotMathieson2D(){
     
     cout << "Nombre de bins bending : " << nbbinsb << " Nombre de pads bending : " << nopadsb << endl;
     cout << "Nombre de bins non-bending : " << nbbinsnb << " Nombre de pads non-bending : " << nopadsnb << endl;
-    cout << "IL Y A UN PB SUR LE NON BENDING (MERGING DE BINS A FAIRE). On a mergé les bins artificiellement lors de la formation des digits." << endl;
+   // cout << "IL Y A UN PB SUR LE NON BENDING (MERGING DE BINS A FAIRE). On a mergé les bins artificiellement lors de la formation des digits." << endl;
     
     for(int i=0; i<nopadsb + nopadsnb; i++){
         if(charge[i] > 2){  //Couper le bruit type
@@ -214,7 +241,7 @@ void Validation::PlotMathieson2D(){
             digits.push_back( std::make_unique<mch::Digit>() );
             mch::Digit* digit = digits.back().get();
 
-               digit->setDetID(809);
+               digit->setDetID(819);
                digit->setPadID(i);
                digit->setADC(charge[i]);
 
@@ -225,9 +252,9 @@ void Validation::PlotMathieson2D(){
     
 }
 
-void Validation::InfoDE809b(){
+void Validation::InfoDE819b(){
     
-    int detElemId =809;
+    int detElemId =819;
     bool isbending = kTRUE;
     o2::mch::mapping::CathodeSegmentation catseg(detElemId, isbending);
 
@@ -336,9 +363,9 @@ void Validation::InfoDE809b(){
     
 }
 
-void Validation::InfoDE809nb(){
+void Validation::InfoDE819nb(){
     
-    int detElemId =809;
+    int detElemId =819;
     bool isbending = kFALSE;
     o2::mch::mapping::CathodeSegmentation catseg(detElemId, isbending);
 
@@ -465,12 +492,14 @@ void Validation::TestClustering(){
           printf("\n\n==========\nRunning Clustering\n\n");
           
         //Runs the clustering of preClusters following a CenterOfGravity algorithm. Fills clusters.
-        clustering.runFinderCOG(preClusters, clusters);
-        printf("Number of clusters obtained and saved: %lu\n", clusters.size());
+//        clustering.runFinderCOG(preClusters, clusters);
+//        printf("Number of clusters obtained and saved: %lu\n", clusters.size());
+    
+ //      clustering.runFinderSimpleFit(preClusters, clusters);
           
-      // clustering.runFinderSimpleFit(preClusters, clusters);
-          
-     //     clustering.runFinderGaussianFit(preClusters, clusters);
+  //        clustering.runFinderGaussianFit(preClusters, clusters);
+    
+    clustering.runFinderDoubleGaussianFit(preClusters, clusters);
 }
 
 ssize_t Validation::getNumberOfDigits()
@@ -487,6 +516,100 @@ void Validation::storeDigits(void* bufferPtr)
     memcpy(ptr, digits[di].get(), sizeof(mch::Digit));
     ptr += 1;
   }
+}
+
+void ResidualsCOG(){
+    
+    const Int_t n = 15;
+    
+    Double_t xinput[n]  = {0, 2.5, 5, 7.5, 10, 0, 2.5, 5, 7.5, 10, 0, 2.5, 5, 7.5, 10};
+    Double_t exinput[n] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    Double_t yinput[n]  = {0, 0, 0, 0, 0, 0.25, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5, 0.5, 0.5, 0.5};
+    Double_t eyinput[n] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    Double_t restot[n]  = {0.007840347,  0.002234084,  0.006410746,  0.003586554,  0.004374705,  0.006152688,  0.00139723,  0.005710998,  0.002378442,  0.000750866,  0.002745256,  0.003005745,  0.007499117,  0.002986651,  0.006803757};
+    Double_t erestot[n] = {0.005222712,  0.004080179,  0.002880783,  0.0037952,  0.00523312,  0.005242154,  0.00214019,  0.006411414,  0.002580706,  0.005788876,  0.005806547,  0.00273805,  0.004339903,  0.003174934,  0.005813516};
+    
+    TCanvas *cerr = new TCanvas("cerr","Graph2DErrors example",0,0,600,600);
+    
+    TGraph2DErrors *dte = new TGraph2DErrors(n, xinput, yinput, restot, exinput, eyinput, erestot);
+    dte->SetTitle("Residuals COG - DE819 on a pad of Bending plane");
+    dte->SetFillColor(29);
+    dte->SetMarkerSize(0.8);
+    dte->SetMarkerStyle(20);
+    dte->SetMarkerColor(kRed);
+    dte->SetLineColor(kBlue-3);
+    dte->SetLineWidth(2);
+    dte->Draw("err p0");
+    
+    cerr->Update();
+    cerr->Draw();
+    
+}
+
+void ResidualsCompare(){
+    const Int_t n = 11;
+    
+    //Residuals on Y for x=0 y between 0 and 0.5 cm on DE 819
+    
+    TCanvas *c10 = new TCanvas("c10", "The road to PlotDorado",
+    200,10,600,400);
+        
+                Float_t meaninput[n]  = {0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5};
+                Float_t emeaninput[n] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+                Float_t resgaus[n]  = {-0.00413, -0.00140, -0.01742, -0.01522, 0.00244, -0.00323, 0.00756, 0.00685, 0.01445, 0.00716, 0.00232};
+                Float_t eresgaus[n] = {0.00570, 0.00577, 0.00561, 0.00559, 0.00551, 0.00560, 0.00549, 0.00605, 0.00567, 0.00569, 0.00568};
+
+//                Float_t rescog[n]  = {-0.0114, -0.0548, -0.0840, -0.0834, -0.0432, 0.0012, 0.0350, 0.0810, 0.0775, 0.0491, 0.0018};
+//                Float_t erescog[n] = {0.0061, 0.0101, 0.0053, 0.0057, 0.0068, 0.0094, 0.0080, 0.0074, 0.0042, 0.0116, 0.0061};
+    
+                Float_t resdoublegaus[n]  = {-0.00046, -0.00139, 0.00185, -0.00710, -0.00106, 0.00444, -0.00398, -0.00471, -0.00572, -0.00414, -0.00381};
+                Float_t eresdoublegaus[n] = {0.00494, 0.00503, 0.00535, 0.00580, 0.00672, 0.00698, 0.00636, 0.00570, 0.00535, 0.00495, 0.00493};
+    
+                Float_t resmathieson[n]  = {0.00636, 0.00010, 0.00113, 0.00003, -0.00110, 0.00513, 0.00400, -0.00413, 0.00327, 0.00645, -0.00574};
+                Float_t eresmathieson[n] = {0.00495, 0.00504, 0.00551, 0.00589, 0.00637, 0.00633, 0.00649, 0.00605, 0.00535, 0.00499, 0.00479};
+
+                TGraphErrors *gr1 = new TGraphErrors(n,meaninput,resgaus,emeaninput,eresgaus);
+                TGraphErrors *gr2 = new TGraphErrors(n,meaninput,resdoublegaus,emeaninput,eresdoublegaus);
+             //   TGraphErrors *gr3 = new TGraphErrors(n,meaninput,rescog,emeaninput,erescog);
+                TGraphErrors *gr4 = new TGraphErrors(n,meaninput,resmathieson,emeaninput,eresmathieson);
+                TF1 *gr0 = new TF1("gr0","0",-1,1);
+
+                gr1->SetTitle("Residuals wrt input y");
+                gr1->SetMarkerColor(4);
+                gr1->SetLineColor(4);
+                gr1->SetMarkerStyle(8);
+                gr1->GetXaxis()->SetTitle("y input (cm)");
+                gr1->GetYaxis()->SetTitle("Residual (cm)");
+                gr1->Draw("AP");
+                gr2->SetMarkerColor(3);
+                gr2->SetLineColor(3);
+                gr2->SetMarkerStyle(8);
+                gr2->Draw("P SAME");
+//                gr3->SetMarkerColor(2);
+//                gr3->SetLineColor(2);
+//                gr3->SetMarkerStyle(8);
+//                gr3->Draw("P SAME");
+                gr4->SetMarkerColor(1);
+                gr4->SetLineColor(1);
+                gr4->SetMarkerStyle(8);
+                gr4->Draw("P SAME");
+                gr0->SetLineStyle(2);
+                gr0->SetLineColor(1);
+                gr0->Draw("SAME");
+
+                auto legend = new TLegend(0.1,0.7,0.3,0.9);
+                legend->SetHeader("Residuals"); // option "C" allows to center the header
+                legend->AddEntry(gr1,"Residuals Gaussian fit","lep");
+                legend->AddEntry(gr2,"Residuals Double Gaussian fit","lep");
+//                legend->AddEntry(gr3,"Residuals COG","lep");
+                legend->AddEntry(gr4,"Residuals Mathieson","lep");
+                legend->Draw();
+    
+    c10->Update();
+    c10->Draw();
+    
+    
 }
 
 }

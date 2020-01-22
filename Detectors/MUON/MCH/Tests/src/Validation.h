@@ -25,15 +25,18 @@ namespace o2 {
 namespace mch {
 
  Double_t myMathieson2D(Double_t *x, Double_t *par);
+Double_t myMathieson2D2hits(Double_t *x, Double_t *par);
  void myMath();
+void ResidualsCOG();
+void ResidualsCompare();
 
 class Validation
 {
 public:
   Validation();
   void PlotMathieson2D();
-  void InfoDE809b();
-  void InfoDE809nb();
+  void InfoDE819b();
+  void InfoDE819nb();
   void TestClustering();
     ssize_t getNumberOfDigits();
     void storeDigits(void* bufferPtr);
