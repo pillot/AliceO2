@@ -11,7 +11,7 @@
 #include "MCHMappingInterface/Segmentation.h"
 #include "MCHPreClustering/PreClusterFinder.h"
 #include "MCHPreClustering/PreClusterBlock.h"
-//#include "TVirtualFitter.h"
+#include "TVirtualFitter.h"
 //#include "TObjArray.h"
 
 #include "Math/Minimizer.h"
@@ -291,8 +291,8 @@ void Clustering::runFinderSimpleFit(std::vector<PreClusterStruct>& preClusters, 
             clustertmp = clustertmpCOG;
         }
         else{
-        clustertmp = FinderSimpleFit(preclustertmp, clustertmpCOG);
-         //   clustertmp = ComputePosition(preclustertmp, clustertmpCOG);
+    //    clustertmp = FinderSimpleFit(preclustertmp, clustertmpCOG);    //Fit manuel
+        clustertmp = ComputePosition(preclustertmp, clustertmpCOG);      //Fit Minuit
         }
         
         clusters.push_back(clustertmp);
@@ -304,9 +304,13 @@ void Clustering::runFinderSimpleFit(std::vector<PreClusterStruct>& preClusters, 
 }
 
 
+
+
 //_________________________________________________________________________________________________
 Clustering::Cluster Clustering::FinderSimpleFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG)
 {
+    
+// FIT MANUEL - POUR AVOIR LE FIT SOUS MINUIT VOIR ComputePosition
     cout << "\n\n==========\nRunning SimpleFit Algorithm\n\n" << endl;
     
     Cluster cluster;
@@ -364,8 +368,8 @@ Clustering::Cluster Clustering::FinderSimpleFit(std::vector<Digit> &precluster, 
         Double_t Kx3 = 0.5085;
         Double_t Ky3 = 0.5840;
         
-        Double_t pasxhit = 0.0001;
-        Double_t pasyhit = 0.0001;
+        Double_t pasxhit = 0.00001;
+        Double_t pasyhit = 0.00001;
         
         int compteurboucle = 0;
         
@@ -438,10 +442,10 @@ Clustering::Cluster Clustering::FinderSimpleFit(std::vector<Digit> &precluster, 
     
     
     //Détermination de la position finale du hit à l'aide de la résolution sur chaque cathode
-    xhitfinal = ( xsize[0] < xsize[1] ) ? xhit[0] : xhit[1];
-    yhitfinal = ( ysize[0] < ysize[1] ) ? yhit[0] : yhit[1];
-    Double_t ex = ( xsize[0] < xsize[1] ) ? xsize[0] : xsize[1];
-    Double_t ey = ( ysize[0] < ysize[1] ) ? ysize[0] : ysize[1];
+    xhitfinal = xhit[0];
+    yhitfinal = yhit[1];
+    Double_t ex = xsize[0];
+    Double_t ey = ysize[1];
     
     double timestamp = precluster[0].getTimeStamp();  // On récupère le timestamp du premier digit du precluster
     
@@ -482,13 +486,13 @@ Double_t Clustering::Chi2Mathieson(int cathode, Double_t chargetot, std::vector<
             std::vector<Double_t> lowerLeft = {xhit - padPosition[0] - 0.5*padSize[0], yhit - padPosition[1] - 0.5*padSize[1]};
             std::vector<Double_t> upperRight= {lowerLeft[0] + padSize[0], lowerLeft[1] + padSize[1]};
             
-            Double_t qfit = IntMathiesonXY(lowerLeft[0], lowerLeft[1], upperRight[0], upperRight[1], Kx3, Ky3);
+            Double_t qfit = chargetot*IntMathiesonXY(lowerLeft[0], lowerLeft[1], upperRight[0], upperRight[1], Kx3, Ky3);
 
-            Double_t qtrue = precluster[i].getADC()/chargetot;
+            Double_t qtrue = precluster[i].getADC();
             
-            Double_t delta = qfit-qtrue;
+            Double_t delta = qtrue-qfit;
             
-            sum += pow(delta,2);
+            sum += pow(delta,2)/qtrue;
         }
     }
     
@@ -545,7 +549,7 @@ Double_t Clustering::IntMathiesonXY(Double_t x1, Double_t y1, Double_t x2, Doubl
 
 
 
-
+/*
 //_________________________________________________________________________________________________
 
 double RosenBrock(const double *xx )
@@ -613,6 +617,7 @@ int NumericalMinimization(const char * minName = "Minuit2",
 }
 //_________________________________________________________________________________________________
 
+ */
 
 
 
@@ -637,12 +642,15 @@ int NumericalMinimization(const char * minName = "Minuit2",
 
 
 //_________________________________________________________________________________________________
-//void Clustering::FitFunction(Int_t& /*notused*/, Double_t* /*notused*/,
-//                            Double_t& sum, Double_t* par,
-//                             Int_t /*notused*/)
-//  {
-//    /// Chi2 Function to minimize: Mathieson charge distribution in 2 dimensions
-//
+void FitFunction(Int_t& /*notused*/, Double_t* /*notused*/,
+                            Double_t& sum, Double_t* par,
+                             Int_t /*notused*/)
+  {
+    /// Chi2 Function to minimize: Mathieson charge distribution in 2 dimensions
+      
+          //Méthode bourrine. Définir un vecteur de paramètres énorme:
+          // x   y   cathode   chgtot   Kx3   Ky3   digit par digit (Det Pad ADC)
+
 //    TObjArray* userObjects = static_cast<TObjArray*>(TVirtualFitter::GetFitter()->GetObjectFit());
 //
 //    std::vector<Digit> precluster = static_cast<std::vector<Digit>>(userObjects->At(0));
@@ -650,148 +658,174 @@ int NumericalMinimization(const char * minName = "Minuit2",
 //    Double_t chargetot = static_cast<Double_t>(userObjects->At(2));
 //    Double_t Kx3 = static_cast<Double_t>(userObjects->At(3));
 //    Double_t Ky3 = static_cast<Double_t>(userObjects->At(4));
-//
-//    sum = 0.0;
-//
-//    for(Int_t i = 0; i < precluster.size(); ++i){
-//
-//    int detid = precluster[i].getDetID();
-//    int padid = precluster[i].getPadID();
-//    mapping::Segmentation pad(detid); // = mapping::Segmentation(detid);
-//
-//    if ( cathode == pad.isBendingPad(padid) ) //On regarde à quelle cathode appartient le pad
-//    {
-//          //On définit le vecteur position et taille du pad en question
-//        std::vector<Double_t> padPosition = {pad.padPositionX(padid), pad.padPositionY(padid)};
-//        std::vector<Double_t> padSize = {pad.padSizeX(padid), pad.padSizeY(padid)};
-//
-//        std::vector<Double_t> lowerLeft = {par[0] - padPosition[0] - 0.5*padSize[0], par[1] - padPosition[1] - 0.5*padSize[1]};
-//        std::vector<Double_t> upperRight= {lowerLeft[0] + padSize[0], lowerLeft[1] + padSize[1]};
-//
-//        Double_t qfit = IntMathiesonXY(lowerLeft[0], lowerLeft[1], upperRight[0], upperRight[1], Kx3, Ky3)/chargetot;
-//
-//        Double_t qtrue = precluster[i].getADC()/chargetot;
-//
-//        Double_t delta = qfit-qtrue;
-//
-//        sum += pow(delta,2);
-//    }
-//  }
-//}
-//
-////_________________________________________________________________________________________________
-//Clustering::Cluster Clustering::ComputePosition(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG)
-//{
-//  /// Compute the position of the given cluster, by fitting a Mathieson
-//  /// charge distribution to it
-//
-//  TVirtualFitter* fitter = TVirtualFitter::Fitter(0,2);
-//  fitter->SetFCN(FitFunction);
-//
-//  cout << "\n\n==========\nRunning MinuitMathieson Algorithm\n\n" << endl;
-//
-//  Cluster cluster;
-//
-//  //Création des vecteurs position du hit sur chaque cqthode
-//  Double_t xhit[2] = { clustertmpCOG.getx(), clustertmpCOG.getx() };
-//  Double_t yhit[2] = { clustertmpCOG.gety(), clustertmpCOG.gety() };
-//
-//    //Création des vecteurs de charge totale, multiplicité et tailles sur chaque cathode
-//       Double_t chargetot[2] = { 0.0, 0.0 };
-//       Double_t multiplicity[2] = { 0.0, 0.0 };
-//       Double_t xsize[2] = { 0.0, 0.0 };
-//       Double_t ysize[2] = { 0.0, 0.0 };
-//
-//   //Détermination des vecteurs de charge totale, multiplicité et taille qui devient précision
-//   for ( Int_t i = 0; i < precluster.size(); ++i ){
-//       int detid = precluster[i].getDetID();
-//       int padid = precluster[i].getPadID();
-//       mapping::Segmentation pad(detid); // = mapping::Segmentation(detid);
-//
-//       for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
-//       {
-//
-//           if ( cathode == pad.isBendingPad(padid) ) //On regarde à quelle cathode appartient le pad
-//                   {
-//                       std::vector<Double_t> padPosition = {pad.padPositionX(padid), pad.padPositionY(padid)};
-//                       std::vector<Double_t> padSize = {pad.padSizeX(padid), pad.padSizeY(padid)};
-//
-//                       chargetot[cathode] += precluster[i].getADC();
-//                       multiplicity[cathode] += 1;
-//                   }
-//       }
-//   }
-//
-//  Float_t stepX = 0.01; // cm
-//  Float_t stepY = 0.01; // cm
-//    Double_t Kx3 = 0.5085;
-//    Double_t Ky3 = 0.5840;
-//
-//    Double_t arg(-1); // disable printout
-//
-//    for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
-//    {
-//
-//        fitter->ExecuteCommand("SET PRINT",&arg,1);
-//
-//        fitter->SetParameter(0,"cluster X position",xhit[cathode],stepX,0,0);
-//        fitter->SetParameter(1,"cluster Y position",yhit[cathode],stepY,0,0);
-//
-//        TObjArray userObjects;
-//
-//        userObjects.Add(precluster);
-//        userObjects.Add(cathode);
-//        userObjects.Add(chargetot[cathode]);
-//        userObjects.Add(Kx3);
-//        userObjects.Add(Ky3);
-//
-//        fitter->SetObjectFit(&userObjects);
-//
-//        Int_t val = fitter->ExecuteCommand("MIGRAD",0,0);
-//        if ( val )
-//        {
-//        // fit failed. Using COG results, with big errors
-//        cout << "Fit failed. Using COG results for cluster" << endl;
-//            return clustertmpCOG;
-//        }
-//
-//        xhit[cathode] = fitter->GetParameter(0);
-//        yhit[cathode] = fitter->GetParameter(1);
-//        xsize[cathode] = fitter->GetParError(0);
-//        ysize[cathode] = fitter->GetParError(1);
-//
-//        Double_t amin, edm, errdef;
-//        Int_t nvpar, nparx;
-//
-//        fitter->GetStats(amin, edm, errdef, nvpar, nparx);
-//
-//        Double_t chi2 = amin;
-//
-//        printf("Cluster fitted to (x,y)=(%e,%e) (xerr,yerr)=(%e,%e) \n chi2=%e ndf=%d",
-//                        xhit[cathode],yhit[cathode],
-//                        xsize[cathode],ysize[cathode],chi2,fitter->GetNumberFreeParameters());
-//    }
-//
-//    //Détermination de la position finale du hit à l'aide de la résolution sur chaque cathode
-//    Double_t xhitfinal = ( xsize[0] < xsize[1] ) ? xhit[0] : xhit[1];
-//    Double_t yhitfinal = ( ysize[0] < ysize[1] ) ? yhit[0] : yhit[1];
-//    Double_t ex = ( xsize[0] < xsize[1] ) ? xsize[0] : xsize[1];
-//    Double_t ey = ( ysize[0] < ysize[1] ) ? ysize[0] : ysize[1];
-//
-//    double timestamp = precluster[0].getTimeStamp();  // On récupère le timestamp du premier digit du precluster
-//
-//
-//    //On remplit un cluster avec les infos nécessaires
-//    cluster.setx(xhitfinal);
-//    cluster.sety(yhitfinal);
-//    cluster.setex(ex);
-//    cluster.setey(ey);
-//    cluster.settimestamp(timestamp);    // En première approx. on peut affecter le timestamp du pre;ier digit au cluster
-//
-//            printf("\n\nCluster par simple fit:\nCluster multiplicity %ld \n(x,y)=(%e,%e) \nprecision=(ex,ey)=(%e,%e) \ntimestamp = %lf \n\n",precluster.size(),cluster.getx(),cluster.gety(),cluster.getex(),cluster.getey(),cluster.gettimestamp());
-//
-//    return cluster;
-//}
+      
+      Clustering cluster;
+
+    sum = 0.0;
+      
+      int cathode = par[2];
+      int chargetot = par[3];
+      double Kx3 = par[4];
+      double Ky3 = par[5];
+      int nbdigits = par[6];
+
+    for(Int_t i = 0; i < nbdigits; ++i){
+
+    int detid = par[7+(3*i)];
+    int padid = par[8+(3*i)];
+    int ADC = par[9+(3*i)];
+        
+    mapping::Segmentation pad(detid); // = mapping::Segmentation(detid);
+
+    if ( cathode == pad.isBendingPad(padid) ) //On regarde à quelle cathode appartient le pad
+    {
+          //On définit le vecteur position et taille du pad en question
+        std::vector<Double_t> padPosition = {pad.padPositionX(padid), pad.padPositionY(padid)};
+        std::vector<Double_t> padSize = {pad.padSizeX(padid), pad.padSizeY(padid)};
+
+        std::vector<Double_t> lowerLeft = {par[0] - padPosition[0] - 0.5*padSize[0], par[1] - padPosition[1] - 0.5*padSize[1]};
+        std::vector<Double_t> upperRight= {lowerLeft[0] + padSize[0], lowerLeft[1] + padSize[1]};
+
+        Double_t qfit = chargetot*cluster.IntMathiesonXY(lowerLeft[0], lowerLeft[1], upperRight[0], upperRight[1], Kx3, Ky3);
+
+        Double_t qtrue = ADC;
+
+        Double_t delta = qtrue-qfit;
+
+        sum += pow(delta,2)/qtrue;
+    }
+  }
+}
+
+//_________________________________________________________________________________________________
+Clustering::Cluster Clustering::ComputePosition(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG)
+{
+  /// Compute the position of the given cluster, by fitting a Mathieson
+  /// charge distribution to it
+
+    int nparams = 6+(3*precluster.size());
+    Double_t vecxmin[2] = {1E3, 1E3};
+    Double_t vecxmax[2] = {-1E3, -1E3};
+    Double_t vecymin[2] = {1E3, 1E3};
+    Double_t vecymax[2] = {-1E3, -1E3};
+    
+  TVirtualFitter* fitter = TVirtualFitter::Fitter(0,nparams);
+  fitter->SetFCN(FitFunction);
+
+  cout << "\n\n==========\nRunning MinuitMathieson Algorithm.\n\n" << endl;
+
+  Cluster cluster;
+
+  //Création des vecteurs position du hit sur chaque cqthode
+  Double_t xhit[2] = { clustertmpCOG.getx(), clustertmpCOG.getx() };
+  Double_t yhit[2] = { clustertmpCOG.gety(), clustertmpCOG.gety() };
+
+    //Création des vecteurs de charge totale, multiplicité et tailles sur chaque cathode
+       Double_t chargetot[2] = { 0.0, 0.0 };
+       Double_t multiplicity[2] = { 0.0, 0.0 };
+       Double_t xsize[2] = { 0.0, 0.0 };
+       Double_t ysize[2] = { 0.0, 0.0 };
+
+   //Détermination des vecteurs de charge totale, multiplicité et taille qui devient précision
+   for ( Int_t i = 0; i < precluster.size(); ++i ){
+       int detid = precluster[i].getDetID();
+       int padid = precluster[i].getPadID();
+       
+       mapping::Segmentation pad(detid); // = mapping::Segmentation(detid);
+
+       for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
+       {
+
+           if ( cathode == pad.isBendingPad(padid) ) //On regarde à quelle cathode appartient le pad
+                   {
+                       std::vector<Double_t> padPosition = {pad.padPositionX(padid), pad.padPositionY(padid)};
+                       std::vector<Double_t> padSize = {pad.padSizeX(padid), pad.padSizeY(padid)};
+                       
+                       vecxmin[cathode] = TMath::Min(padPosition[0]-0.5*padSize[0],vecxmin[cathode]);
+                       vecxmax[cathode] = TMath::Max(padPosition[0]+0.5*padSize[0],vecxmax[cathode]);
+                       vecymin[cathode] = TMath::Min(padPosition[1]-0.5*padSize[1],vecymin[cathode]);
+                       vecymax[cathode] = TMath::Max(padPosition[1]+0.5*padSize[1],vecymax[cathode]);
+
+                       chargetot[cathode] += precluster[i].getADC();
+                       multiplicity[cathode] += 1;
+                   }
+       }
+   }
+    
+
+  Float_t stepX = 0.00001; // cm
+  Float_t stepY = 0.00001; // cm
+    Double_t Kx3 = 0.5085;
+    Double_t Ky3 = 0.5840;
+
+    Double_t arg(-1); // disable printout
+
+    for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
+    {
+
+        fitter->ExecuteCommand("SET PRINT",&arg,1);
+
+        fitter->SetParameter(0,"cluster X position",xhit[cathode],stepX,vecxmin[cathode],vecxmax[cathode]);
+        fitter->SetParameter(1,"cluster Y position",yhit[cathode],stepY,vecymin[cathode],vecymax[cathode]);
+        fitter->SetParameter(2,"cathode",cathode,0,0,0);
+        fitter->SetParameter(3,"chargetot",chargetot[cathode],0,0,0);
+        fitter->SetParameter(4,"Kx3",Kx3,0,0,0);
+        fitter->SetParameter(5,"Ky3",Ky3,0,0,0);
+        fitter->SetParameter(6,"NbDigits",precluster.size(),0,0,0);
+        
+        for(int j=0; j<precluster.size(); j++){
+            fitter->SetParameter(7+(3*j),"DetID",precluster[j].getDetID(),0,0,0);
+            fitter->SetParameter(8+(3*j),"PadID",precluster[j].getPadID(),0,0,0);
+            fitter->SetParameter(9+(3*j),"ADC",precluster[j].getADC(),0,0,0);
+        }
+
+        Double_t stratArg(2);
+        fitter->ExecuteCommand("SET STR",&stratArg,1);
+        Int_t val = fitter->ExecuteCommand("MIGRAD",0,0);
+        if ( val )
+        {
+        // fit failed. Using COG results, with big errors
+        cout << "Fit failed. Using COG results for cluster" << endl;
+            return clustertmpCOG;
+        }
+
+        xhit[cathode] = fitter->GetParameter(0);
+        yhit[cathode] = fitter->GetParameter(1);
+        xsize[cathode] = fitter->GetParError(0);
+        ysize[cathode] = fitter->GetParError(1);
+
+        Double_t amin, edm, errdef;
+        Int_t nvpar, nparx;
+
+        fitter->GetStats(amin, edm, errdef, nvpar, nparx);
+
+        Double_t chi2 = amin;
+
+        printf("Cluster fitted to (x,y)=(%e,%e) (xerr,yerr)=(%e,%e) \n chi2=%e ndf=%d",
+                        xhit[cathode],yhit[cathode],
+                        xsize[cathode],ysize[cathode],chi2,fitter->GetNumberFreeParameters());
+    }
+
+    //Détermination de la position finale du hit à l'aide de la résolution sur chaque cathode
+    Double_t xhitfinal = xhit[0];
+    Double_t yhitfinal = yhit[1];
+    Double_t ex = xsize[0];
+    Double_t ey = ysize[1];
+
+    double timestamp = precluster[0].getTimeStamp();  // On récupère le timestamp du premier digit du precluster
+
+
+    //On remplit un cluster avec les infos nécessaires
+    cluster.setx(xhitfinal);
+    cluster.sety(yhitfinal);
+    cluster.setex(ex);
+    cluster.setey(ey);
+    cluster.settimestamp(timestamp);    // En première approx. on peut affecter le timestamp du pre;ier digit au cluster
+
+            printf("\n\nCluster par simple fit:\nCluster multiplicity %ld \n(x,y)=(%e,%e) \nprecision=(ex,ey)=(%e,%e) \ntimestamp = %lf \n\n",precluster.size(),cluster.getx(),cluster.gety(),cluster.getex(),cluster.getey(),cluster.gettimestamp());
+
+    return cluster;
+}
 
 //_________________________________________________________________________________________________
 
@@ -805,7 +839,7 @@ int NumericalMinimization(const char * minName = "Minuit2",
 
 
 
-/*
+
 
 //_________________________________________________________________________________________________
 void Clustering::runFinderGaussianFit(std::vector<PreClusterStruct>& preClusters, std::vector<Cluster>& clusters)
@@ -847,11 +881,12 @@ void Clustering::runFinderGaussianFit(std::vector<PreClusterStruct>& preClusters
        // cout << "preclustertmp[0].getADC():" << preclustertmp[0].getADC() << endl;
         clustertmpCOG = FinderCOG(preclustertmp);
       //  cout << "COORD X DU CLUSTER AJOUTÉ A CLUSTERS: " << clustertmp.getx() << endl;
-        if(preClusters.size() < 3){
+        if(preclustertmp.size() < 3){
             clustertmp = clustertmpCOG;
         }
         else{
-        clustertmp = FinderGaussianFit(preclustertmp, clustertmpCOG);
+   //     clustertmp = FinderGaussianFit(preclustertmp, clustertmpCOG);         //Fit manuel
+        clustertmp = ComputePositionGaussianFit(preclustertmp, clustertmpCOG);  //Fit Minuit
         }
         
         clusters.push_back(clustertmp);
@@ -865,7 +900,7 @@ void Clustering::runFinderGaussianFit(std::vector<PreClusterStruct>& preClusters
 
 //_________________________________________________________________________________________________
 Clustering::Cluster Clustering::FinderGaussianFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG)
-{
+{  //Fit Gaussien Manuel - voir ComputePositionGaussianFit pour le fit Minuit
     cout << "\n\n==========\nRunning GaussianFit Algorithm\n\n" << endl;
     
     Cluster cluster;
@@ -923,8 +958,8 @@ Clustering::Cluster Clustering::FinderGaussianFit(std::vector<Digit> &precluster
         Double_t sigx = 0.7604;
         Double_t sigy = 0.7808;
         
-        Double_t pasxhit = 0.2;
-        Double_t pasyhit = 0.2;
+        Double_t pasxhit = 0.00001;
+        Double_t pasyhit = 0.00001;
         
         int compteurboucle = 0;
         
@@ -933,8 +968,8 @@ Clustering::Cluster Clustering::FinderGaussianFit(std::vector<Digit> &precluster
         Double_t NewChiDeux = 100;
         Double_t deltaxhit = 100;
         Double_t deltayhit = 100;
-        Double_t limitstrict = 0.0001;
-        Double_t limitlean = 0.005;
+        Double_t limitstrict = 0.000001;
+        Double_t limitlean = 0.0001;
         Double_t limitx = 0.;
         Double_t limity = 0.;
         
@@ -955,10 +990,10 @@ Clustering::Cluster Clustering::FinderGaussianFit(std::vector<Digit> &precluster
             Double_t dChidyhit = (Chi2Gauss(cathode, chargetot[cathode], precluster, clustertmpCOG, xhit[cathode], yhit[cathode]+pasyhit, sigx, sigy)-Chi2Gauss(cathode, chargetot[cathode], precluster, clustertmpCOG, xhit[cathode], yhit[cathode], sigx, sigy))/pasyhit;
             
 
-            deltaxhit = pasxhit*dChidxhit*1000;
-            deltayhit = pasyhit*dChidyhit*1000;
-            xhit[cathode] = xhit[cathode] - pasxhit*dChidxhit*1000;
-            yhit[cathode] = yhit[cathode] - pasyhit*dChidyhit*1000;
+            deltaxhit = pasxhit*dChidxhit*1;
+            deltayhit = pasyhit*dChidyhit*1;
+            xhit[cathode] = xhit[cathode] - pasxhit*dChidxhit*1;
+            yhit[cathode] = yhit[cathode] - pasyhit*dChidyhit*1;
             
             
             // Update ChiDeux
@@ -973,8 +1008,8 @@ Clustering::Cluster Clustering::FinderGaussianFit(std::vector<Digit> &precluster
             cout << "OldChiDeux: " << OldChiDeux << endl;
             cout << "NewChiDeux: " << NewChiDeux << endl;
             
-            if(compteurboucle > 1000){
-                cout << "Déjà 1.000 boucles pour trouver Chi2, utilisation résultats COG..." << endl;
+            if(compteurboucle > 10000){
+                cout << "Déjà 10.000 boucles pour trouver Chi2, utilisation résultats COG..." << endl;
                 return clustertmpCOG;
             }
         }
@@ -991,10 +1026,10 @@ Clustering::Cluster Clustering::FinderGaussianFit(std::vector<Digit> &precluster
     
     
     //Détermination de la position finale du hit à l'aide de la résolution sur chaque cathode
-    xhitfinal = ( xsize[0] < xsize[1] ) ? xhit[0] : xhit[1];
-    yhitfinal = ( ysize[0] < ysize[1] ) ? yhit[0] : yhit[1];
-    Double_t ex = ( xsize[0] < xsize[1] ) ? xsize[0] : xsize[1];
-    Double_t ey = ( ysize[0] < ysize[1] ) ? ysize[0] : ysize[1];
+    xhitfinal = xhit[0];
+    yhitfinal = yhit[1];
+    Double_t ex = xsize[0];
+    Double_t ey = ysize[1];
     
     double timestamp = precluster[0].getTimeStamp();  // On récupère le timestamp du premier digit du precluster
     
@@ -1006,7 +1041,9 @@ Clustering::Cluster Clustering::FinderGaussianFit(std::vector<Digit> &precluster
     cluster.setey(ey);
     cluster.settimestamp(timestamp);    // En première approx. on peut affecter le timestamp du pre;ier digit au cluster
     
-            printf("\n\nCluster par simple fit:\nCluster multiplicity %ld \n(x,y)=(%e,%e) \nprecision=(ex,ey)=(%e,%e) \ntimestamp = %lf \n\n",precluster.size(),cluster.getx(),cluster.gety(),cluster.getex(),cluster.getey(),cluster.gettimestamp());
+     printf("\n\nCluster par COG:\nCluster multiplicity %ld \n(x,y)=(%e,%e) \nprecision=(ex,ey)=(%e,%e) \ntimestamp = %lf \n\n",precluster.size(),clustertmpCOG.getx(),clustertmpCOG.gety(),clustertmpCOG.getex(),clustertmpCOG.getey(),clustertmpCOG.gettimestamp());
+    
+            printf("\n\nCluster par gaussian fit:\nCluster multiplicity %ld \n(x,y)=(%e,%e) \nprecision=(ex,ey)=(%e,%e) \ntimestamp = %lf \n\n",precluster.size(),cluster.getx(),cluster.gety(),cluster.getex(),cluster.getey(),cluster.gettimestamp());
     
     return cluster;
 
@@ -1032,13 +1069,13 @@ Double_t Clustering::Chi2Gauss(int cathode, Double_t chargetot, std::vector<Digi
             std::vector<double> lowerLeft = {xhit - padPosition[0] - 0.5*padSize[0], yhit - padPosition[1] - 0.5*padSize[1]};
             std::vector<double> upperRight= {lowerLeft[0] + padSize[0], lowerLeft[1] + padSize[1]};
             
-            Double_t qfit = IntGaussXY(lowerLeft[0], lowerLeft[1], upperRight[0], upperRight[1], sigx, sigy)/chargetot;
+            Double_t qfit = chargetot*IntGaussXY(lowerLeft[0], lowerLeft[1], upperRight[0], upperRight[1], sigx, sigy);
 
-            Double_t qtrue = precluster[i].getADC()/chargetot;
+            Double_t qtrue = precluster[i].getADC();
             
-            Double_t delta = qfit-qtrue;
+            Double_t delta = qtrue-qfit;
             
-            sum += pow(delta,2);
+            sum += pow(delta,2)/qtrue;
         }
     }
     
@@ -1062,6 +1099,496 @@ Double_t Clustering::IntGaussXY(Double_t x1, Double_t y1, Double_t x2, Double_t 
     return integral;
 }
 
+
+
+
+
+
+//_________________________________________________________________________________________________
+void FitFunctionGaussianFit(Int_t& /*notused*/, Double_t* /*notused*/,
+                            Double_t& sum, Double_t* par,
+                             Int_t /*notused*/)
+  {
+    /// Chi2 Function to minimize: Mathieson charge distribution in 2 dimensions
+      
+          //Méthode bourrine. Définir un vecteur de paramètres énorme:
+          // x   y   cathode   chgtot   Kx3   Ky3   digit par digit (Det Pad ADC)
+
+//    TObjArray* userObjects = static_cast<TObjArray*>(TVirtualFitter::GetFitter()->GetObjectFit());
+//
+//    std::vector<Digit> precluster = static_cast<std::vector<Digit>>(userObjects->At(0));
+//    int cathode = static_cast<int>(userObjects->At(1));
+//    Double_t chargetot = static_cast<Double_t>(userObjects->At(2));
+//    Double_t Kx3 = static_cast<Double_t>(userObjects->At(3));
+//    Double_t Ky3 = static_cast<Double_t>(userObjects->At(4));
+      
+      Clustering cluster;
+
+    sum = 0.0;
+      
+      int cathode = par[2];
+      int chargetot = par[3];
+      double sigx = par[4];
+      double sigy = par[5];
+      int nbdigits = par[6];
+
+    for(Int_t i = 0; i < nbdigits; ++i){
+
+    int detid = par[7+(3*i)];
+    int padid = par[8+(3*i)];
+    int ADC = par[9+(3*i)];
+        
+    mapping::Segmentation pad(detid); // = mapping::Segmentation(detid);
+
+    if ( cathode == pad.isBendingPad(padid) ) //On regarde à quelle cathode appartient le pad
+    {
+          //On définit le vecteur position et taille du pad en question
+        std::vector<Double_t> padPosition = {pad.padPositionX(padid), pad.padPositionY(padid)};
+        std::vector<Double_t> padSize = {pad.padSizeX(padid), pad.padSizeY(padid)};
+
+        std::vector<Double_t> lowerLeft = {par[0] - padPosition[0] - 0.5*padSize[0], par[1] - padPosition[1] - 0.5*padSize[1]};
+        std::vector<Double_t> upperRight= {lowerLeft[0] + padSize[0], lowerLeft[1] + padSize[1]};
+
+        Double_t qfit = chargetot*cluster.IntGaussXY(lowerLeft[0], lowerLeft[1], upperRight[0], upperRight[1], sigx, sigy);
+
+        Double_t qtrue = ADC;
+
+        Double_t delta = qtrue-qfit;
+
+        sum += pow(delta,2)/qtrue;
+    }
+  }
+}
+
+//_________________________________________________________________________________________________
+Clustering::Cluster Clustering::ComputePositionGaussianFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG)
+{
+  /// Compute the position of the given cluster, by fitting a Gaussian
+  /// charge distribution to it
+
+    int nparams = 6+(3*precluster.size());
+    Double_t vecxmin[2] = {1E3, 1E3};
+    Double_t vecxmax[2] = {-1E3, -1E3};
+    Double_t vecymin[2] = {1E3, 1E3};
+    Double_t vecymax[2] = {-1E3, -1E3};
+    
+  TVirtualFitter* fitter = TVirtualFitter::Fitter(0,nparams);
+  fitter->SetFCN(FitFunctionGaussianFit);
+
+  cout << "\n\n==========\nRunning MinuitGaussian Algorithm.\n\n" << endl;
+
+  Cluster cluster;
+
+  //Création des vecteurs position du hit sur chaque cqthode
+  Double_t xhit[2] = { clustertmpCOG.getx(), clustertmpCOG.getx() };
+  Double_t yhit[2] = { clustertmpCOG.gety(), clustertmpCOG.gety() };
+
+    //Création des vecteurs de charge totale, multiplicité et tailles sur chaque cathode
+       Double_t chargetot[2] = { 0.0, 0.0 };
+       Double_t multiplicity[2] = { 0.0, 0.0 };
+       Double_t xsize[2] = { 0.0, 0.0 };
+       Double_t ysize[2] = { 0.0, 0.0 };
+
+   //Détermination des vecteurs de charge totale, multiplicité et taille qui devient précision
+   for ( Int_t i = 0; i < precluster.size(); ++i ){
+       int detid = precluster[i].getDetID();
+       int padid = precluster[i].getPadID();
+       
+       mapping::Segmentation pad(detid); // = mapping::Segmentation(detid);
+
+       for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
+       {
+
+           if ( cathode == pad.isBendingPad(padid) ) //On regarde à quelle cathode appartient le pad
+                   {
+                       std::vector<Double_t> padPosition = {pad.padPositionX(padid), pad.padPositionY(padid)};
+                       std::vector<Double_t> padSize = {pad.padSizeX(padid), pad.padSizeY(padid)};
+                       
+                       vecxmin[cathode] = TMath::Min(padPosition[0]-0.5*padSize[0],vecxmin[cathode]);
+                       vecxmax[cathode] = TMath::Max(padPosition[0]+0.5*padSize[0],vecxmax[cathode]);
+                       vecymin[cathode] = TMath::Min(padPosition[1]-0.5*padSize[1],vecymin[cathode]);
+                       vecymax[cathode] = TMath::Max(padPosition[1]+0.5*padSize[1],vecymax[cathode]);
+
+                       chargetot[cathode] += precluster[i].getADC();
+                       multiplicity[cathode] += 1;
+                   }
+       }
+   }
+    
+
+  Float_t stepX = 0.00001; // cm
+  Float_t stepY = 0.00001; // cm
+    Double_t sigx = 0.7604;
+    Double_t sigy = 0.7808;
+
+    Double_t arg(-1); // disable printout
+
+    for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
+    {
+
+        fitter->ExecuteCommand("SET PRINT",&arg,1);
+
+        fitter->SetParameter(0,"cluster X position",xhit[cathode],stepX,vecxmin[cathode],vecxmax[cathode]);
+        fitter->SetParameter(1,"cluster Y position",yhit[cathode],stepY,vecymin[cathode],vecymax[cathode]);
+        fitter->SetParameter(2,"cathode",cathode,0,0,0);
+        fitter->SetParameter(3,"chargetot",chargetot[cathode],0,0,0);
+        fitter->SetParameter(4,"sigx",sigx,0,0,0);
+        fitter->SetParameter(5,"sigy",sigy,0,0,0);
+        fitter->SetParameter(6,"NbDigits",precluster.size(),0,0,0);
+        
+        for(int j=0; j<precluster.size(); j++){
+            fitter->SetParameter(7+(3*j),"DetID",precluster[j].getDetID(),0,0,0);
+            fitter->SetParameter(8+(3*j),"PadID",precluster[j].getPadID(),0,0,0);
+            fitter->SetParameter(9+(3*j),"ADC",precluster[j].getADC(),0,0,0);
+        }
+
+        Double_t stratArg(2);
+        fitter->ExecuteCommand("SET STR",&stratArg,1);
+        Int_t val = fitter->ExecuteCommand("MIGRAD",0,0);
+        if ( val )
+        {
+        // fit failed. Using COG results, with big errors
+        cout << "Fit failed. Using COG results for cluster" << endl;
+            return clustertmpCOG;
+        }
+
+        xhit[cathode] = fitter->GetParameter(0);
+        yhit[cathode] = fitter->GetParameter(1);
+        xsize[cathode] = fitter->GetParError(0);
+        ysize[cathode] = fitter->GetParError(1);
+
+        Double_t amin, edm, errdef;
+        Int_t nvpar, nparx;
+
+        fitter->GetStats(amin, edm, errdef, nvpar, nparx);
+
+        Double_t chi2 = amin;
+
+        printf("Cluster fitted to (x,y)=(%e,%e) (xerr,yerr)=(%e,%e) \n chi2=%e ndf=%d",
+                        xhit[cathode],yhit[cathode],
+                        xsize[cathode],ysize[cathode],chi2,fitter->GetNumberFreeParameters());
+    }
+
+    //Détermination de la position finale du hit à l'aide de la résolution sur chaque cathode
+    Double_t xhitfinal = xhit[0];
+    Double_t yhitfinal = yhit[1];
+    Double_t ex = xsize[0];
+    Double_t ey = ysize[1];
+
+    double timestamp = precluster[0].getTimeStamp();  // On récupère le timestamp du premier digit du precluster
+    
+     printf("\n\nCluster par gaussian fit:\nCluster multiplicity %ld \n(x,y)=(%e,%e) \nprecision=(ex,ey)=(%e,%e) \ntimestamp = %lf \n\n",precluster.size(),xhitfinal,yhitfinal,ex,ey,timestamp);
+
+    //On remplit un cluster avec les infos nécessaires
+    cluster.setx(xhitfinal);
+    cluster.sety(yhitfinal);
+    cluster.setex(ex);
+    cluster.setey(ey);
+    cluster.settimestamp(timestamp);    // En première approx. on peut affecter le timestamp du pre;ier digit au cluster
+
+    return cluster;
+}
+
+//_________________________________________________________________________________________________
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//_________________________________________________________________________________________________
+void Clustering::runFinderDoubleGaussianFit(std::vector<PreClusterStruct>& preClusters, std::vector<Cluster>& clusters)
+{
+    cout << "preClusters.size():" << preClusters.size() << endl;
+    int sizedigit;
+    int jete = 0;
+    Digit digittmp;
+    Cluster clustertmpCOG;
+    Cluster clustertmp;
+    
+    for (Int_t i = 0; i < preClusters.size(); i++)   //On boucle sur les preclusters identifiés
+    {
+        if(preClusters[i].nDigits == 1){         // Je vire les preclusters qui n'ont qu'un seul digit
+            jete++;
+            continue;
+        }
+        cout << "Precluster avec " << preClusters[i].nDigits << " digits." << endl;  //Nombre de digits dans le precluster aue l'on regarde
+        
+        std::vector<Digit> preclustertmp;
+        const Digit* ptrdigit = preClusters[i].digits;
+        
+        for (int j=0; j<preClusters[i].nDigits; j++){          //Je récupère les digits et les mets dans un   vecteur de digits, preclustertmp
+            digittmp = *ptrdigit;
+            cout << "Digit numero:" << j << endl;
+            cout << "digittmp.getADC():" << digittmp.getADC() << endl;
+            cout << "digittmp.getDetID():" << digittmp.getDetID() << endl;
+            cout << "digittmp.getPadID():" << digittmp.getPadID() << endl;
+//            cout << "type digittmp:" << typeid(digittmp).name() << endl;
+//            cout << "type ptrdigit:" << typeid(ptrdigit).name() << endl;
+//            cout << "ptrdigit:" << ptrdigit << endl;
+            preclustertmp.push_back(digittmp);
+            sizedigit = sizeof(digittmp);
+            ptrdigit++;
+        }
+        
+        //Je clusterise mon vecteur de digits, preclustertmp et l'ajoute au vecteur de clusters, nommé clusters.
+        
+       // cout << "preclustertmp[0].getADC():" << preclustertmp[0].getADC() << endl;
+        clustertmpCOG = FinderCOG(preclustertmp);
+      //  cout << "COORD X DU CLUSTER AJOUTÉ A CLUSTERS: " << clustertmp.getx() << endl;
+        if(preclustertmp.size() < 3){
+            clustertmp = clustertmpCOG;
+        }
+        else{
+        clustertmp = ComputePositionDoubleGaussianFit(preclustertmp, clustertmpCOG);
+        }
+        
+        clusters.push_back(clustertmp);
+    }
+    
+    cout << "Nombre de preclusters au départ:" << preClusters.size() << endl;
+    cout << "Nombre de preclusters de taille 1, abandonnés:" << jete << endl;
+    
+}
+
+
+
+//_________________________________________________________________________________________________
+void FitFunctionDoubleGaussianFit(Int_t& /*notused*/, Double_t* /*notused*/,
+                            Double_t& sum, Double_t* par,
+                             Int_t /*notused*/)
+  {
+    /// Chi2 Function to minimize: Mathieson charge distribution in 2 dimensions
+      
+          //Méthode bourrine. Définir un vecteur de paramètres énorme:
+          // x   y   cathode   chgtot   sig1s   sig2s   chgfracs   digit par digit (Det Pad ADC)
+
+//    TObjArray* userObjects = static_cast<TObjArray*>(TVirtualFitter::GetFitter()->GetObjectFit());
+//
+//    std::vector<Digit> precluster = static_cast<std::vector<Digit>>(userObjects->At(0));
+//    int cathode = static_cast<int>(userObjects->At(1));
+//    Double_t chargetot = static_cast<Double_t>(userObjects->At(2));
+//    Double_t Kx3 = static_cast<Double_t>(userObjects->At(3));
+//    Double_t Ky3 = static_cast<Double_t>(userObjects->At(4));
+      
+      Clustering cluster;
+
+    sum = 0.0;
+      
+      int cathode = par[2];
+      int chargetot = par[3];
+      double sig1x = par[4];
+      double sig1y = par[5];
+      double sig2x = par[6];
+      double sig2y = par[7];
+      double chgfracx = par[8];
+      double chgfracy = par[9];
+      int nbdigits = par[10];
+
+    for(Int_t i = 0; i < nbdigits; ++i){
+
+    int detid = par[11+(3*i)];
+    int padid = par[12+(3*i)];
+    int ADC = par[13+(3*i)];
+        
+    mapping::Segmentation pad(detid); // = mapping::Segmentation(detid);
+
+    if ( cathode == pad.isBendingPad(padid) ) //On regarde à quelle cathode appartient le pad
+    {
+          //On définit le vecteur position et taille du pad en question
+        std::vector<Double_t> padPosition = {pad.padPositionX(padid), pad.padPositionY(padid)};
+        std::vector<Double_t> padSize = {pad.padSizeX(padid), pad.padSizeY(padid)};
+
+        std::vector<Double_t> lowerLeft = {par[0] - padPosition[0] - 0.5*padSize[0], par[1] - padPosition[1] - 0.5*padSize[1]};
+        std::vector<Double_t> upperRight= {lowerLeft[0] + padSize[0], lowerLeft[1] + padSize[1]};
+
+        Double_t qfit = chargetot*cluster.IntDoubleGaussXY(lowerLeft[0], lowerLeft[1], upperRight[0], upperRight[1], sig1x, sig1y, sig2x, sig2y, chgfracx, chgfracy);
+
+        Double_t qtrue = ADC;
+
+        Double_t delta = qtrue-qfit;
+
+        sum += pow(delta,2)/qtrue;
+    }
+  }
+}
+
+//_________________________________________________________________________________________________
+Clustering::Cluster Clustering::ComputePositionDoubleGaussianFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG)
+{
+  /// Compute the position of the given cluster, by fitting a Gaussian
+  /// charge distribution to it
+
+    int nparams = 10+(3*precluster.size());
+    Double_t vecxmin[2] = {1E3, 1E3};
+    Double_t vecxmax[2] = {-1E3, -1E3};
+    Double_t vecymin[2] = {1E3, 1E3};
+    Double_t vecymax[2] = {-1E3, -1E3};
+    
+  TVirtualFitter* fitter = TVirtualFitter::Fitter(0,nparams);
+  fitter->SetFCN(FitFunctionDoubleGaussianFit);
+
+  cout << "\n\n==========\nRunning MinuitDoubleGaussian Algorithm.\n\n" << endl;
+
+  Cluster cluster;
+
+  //Création des vecteurs position du hit sur chaque cqthode
+  Double_t xhit[2] = { clustertmpCOG.getx(), clustertmpCOG.getx() };
+  Double_t yhit[2] = { clustertmpCOG.gety(), clustertmpCOG.gety() };
+
+    //Création des vecteurs de charge totale, multiplicité et tailles sur chaque cathode
+       Double_t chargetot[2] = { 0.0, 0.0 };
+       Double_t multiplicity[2] = { 0.0, 0.0 };
+       Double_t xsize[2] = { 0.0, 0.0 };
+       Double_t ysize[2] = { 0.0, 0.0 };
+
+   //Détermination des vecteurs de charge totale, multiplicité et taille qui devient précision
+   for ( Int_t i = 0; i < precluster.size(); ++i ){
+       int detid = precluster[i].getDetID();
+       int padid = precluster[i].getPadID();
+       
+       mapping::Segmentation pad(detid); // = mapping::Segmentation(detid);
+
+       for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
+       {
+
+           if ( cathode == pad.isBendingPad(padid) ) //On regarde à quelle cathode appartient le pad
+                   {
+                       std::vector<Double_t> padPosition = {pad.padPositionX(padid), pad.padPositionY(padid)};
+                       std::vector<Double_t> padSize = {pad.padSizeX(padid), pad.padSizeY(padid)};
+                       
+                       vecxmin[cathode] = TMath::Min(padPosition[0]-0.5*padSize[0],vecxmin[cathode]);
+                       vecxmax[cathode] = TMath::Max(padPosition[0]+0.5*padSize[0],vecxmax[cathode]);
+                       vecymin[cathode] = TMath::Min(padPosition[1]-0.5*padSize[1],vecymin[cathode]);
+                       vecymax[cathode] = TMath::Max(padPosition[1]+0.5*padSize[1],vecymax[cathode]);
+
+                       chargetot[cathode] += precluster[i].getADC();
+                       multiplicity[cathode] += 1;
+                   }
+       }
+   }
+    
+
+  Float_t stepX = 0.00001; // cm
+  Float_t stepY = 0.00001; // cm
+    Double_t sig1x = 1.1059;
+    Double_t sig1y = 1.1350;
+    Double_t sig2x = 0.5702;
+    Double_t sig2y = 0.5785;
+    Double_t chgfracx = 0.6233;
+    Double_t chgfracy = 0.6519;
+
+    Double_t arg(2); // disable printout
+
+    for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
+    {
+
+        fitter->ExecuteCommand("SET PRINT",&arg,1);
+
+        fitter->SetParameter(0,"cluster X position",xhit[cathode],stepX,vecxmin[cathode],vecxmax[cathode]);
+        fitter->SetParameter(1,"cluster Y position",yhit[cathode],stepY,vecymin[cathode],vecymax[cathode]);
+        fitter->SetParameter(2,"cathode",cathode,0,0,0);
+        fitter->SetParameter(3,"chargetot",chargetot[cathode],0,0,0);
+        fitter->SetParameter(4,"sig1x",sig1x,0,0,0);
+        fitter->SetParameter(5,"sig1y",sig1y,0,0,0);
+        fitter->SetParameter(6,"sig2x",sig2x,0,0,0);
+        fitter->SetParameter(7,"sig2y",sig2y,0,0,0);
+        fitter->SetParameter(8,"chgfracx",chgfracx,0,0,0);
+        fitter->SetParameter(9,"chgfracy",chgfracy,0,0,0);
+        fitter->SetParameter(10,"NbDigits",precluster.size(),0,0,0);
+        
+        for(int j=0; j<precluster.size(); j++){
+            fitter->SetParameter(11+(3*j),"DetID",precluster[j].getDetID(),0,0,0);
+            fitter->SetParameter(12+(3*j),"PadID",precluster[j].getPadID(),0,0,0);
+            fitter->SetParameter(13+(3*j),"ADC",precluster[j].getADC(),0,0,0);
+        }
+
+        Double_t stratArg(2);
+        fitter->ExecuteCommand("SET STR",&stratArg,1);
+        Int_t val = fitter->ExecuteCommand("MIGRAD",0,0);
+        if ( val )
+        {
+        // fit failed. Using COG results, with big errors
+        cout << "Fit failed. Using COG results for cluster" << endl;
+            return clustertmpCOG;
+        }
+
+        xhit[cathode] = fitter->GetParameter(0);
+        yhit[cathode] = fitter->GetParameter(1);
+        xsize[cathode] = fitter->GetParError(0);
+        ysize[cathode] = fitter->GetParError(1);
+
+        Double_t amin, edm, errdef;
+        Int_t nvpar, nparx;
+
+        fitter->GetStats(amin, edm, errdef, nvpar, nparx);
+
+        Double_t chi2 = amin;
+
+        printf("Cluster fitted to (x,y)=(%e,%e) (xerr,yerr)=(%e,%e) \n chi2=%e ndf=%d",
+                        xhit[cathode],yhit[cathode],
+                        xsize[cathode],ysize[cathode],chi2,fitter->GetNumberFreeParameters());
+    }
+
+    //Détermination de la position finale du hit à l'aide de la résolution sur chaque cathode
+    Double_t xhitfinal = xhit[0];
+    Double_t yhitfinal = yhit[1];
+    Double_t ex = xsize[0];
+    Double_t ey = ysize[1];
+
+    double timestamp = precluster[0].getTimeStamp();  // On récupère le timestamp du premier digit du precluster
+    
+     printf("\n\nCluster par double gaussian fit:\nCluster multiplicity %ld \n(x,y)=(%e,%e) \nprecision=(ex,ey)=(%e,%e) \ntimestamp = %lf \n\n",precluster.size(),xhitfinal,yhitfinal,ex,ey,timestamp);
+
+    //On remplit un cluster avec les infos nécessaires
+    cluster.setx(xhitfinal);
+    cluster.sety(yhitfinal);
+    cluster.setex(ex);
+    cluster.setey(ey);
+    cluster.settimestamp(timestamp);    // En première approx. on peut affecter le timestamp du pre;ier digit au cluster
+
+    return cluster;
+}
+
+//_________________________________________________________________________________________________
+Double_t Clustering::IntDoubleGaussXY(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t sig1x, Double_t sig1y, Double_t sig2x, Double_t sig2y, Double_t chgfracx, Double_t chgfracy)
+{
+    Double_t pitch = 0.25;
+    x1 /= pitch;
+    x2 /= pitch;
+    y1 /= pitch;
+    y2 /= pitch;
+    
+    Double_t erf1x = 0.5*( erf( (x2)/(sig1x*sqrt(2)) ) - erf( (x1)/(sig1x*sqrt(2)) ) );
+    Double_t erf1y = 0.5*( erf( (y2)/(sig1y*sqrt(2)) ) - erf( (y1)/(sig1y*sqrt(2)) ) );
+    Double_t erf2x = 0.5*( erf( (x2)/(sig2x*sqrt(2)) ) - erf( (x1)/(sig2x*sqrt(2)) ) );
+    Double_t erf2y = 0.5*( erf( (y2)/(sig2y*sqrt(2)) ) - erf( (y1)/(sig2y*sqrt(2)) ) );
+    Double_t erfx = chgfracx*erf1x/(chgfracx+1) + erf2x/(chgfracx+1);
+    Double_t erfy = chgfracy*erf1y/(chgfracy+1) + erf2y/(chgfracy+1);
+    Double_t integral = erfx*erfy;
+    
+    return integral;
+}
+
+
+
+
+
+
+
+
+
+/*
 
 //_________________________________________________________________________________________________
 void Clustering::ComparisonMathiesonGauss(std::string& buffer)
