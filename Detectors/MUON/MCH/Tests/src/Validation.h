@@ -16,6 +16,7 @@
 #include <stdio.h>
 
 #include "MCHBase/Digit.h"
+#include "MCHClustering/ClusteringForTest.h"
 
 using namespace o2::mch;
 using namespace std;
@@ -26,18 +27,20 @@ namespace mch {
 
  Double_t myMathieson2D(Double_t *x, Double_t *par);
 Double_t myMathieson2D2hits(Double_t *x, Double_t *par);
- void myMath();
+ void myMath1hit(Double_t x, Double_t y);
+void myMath2hits(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t chg1, Double_t chg2);
 void ResidualsCOG();
 void ResidualsCompare();
+void ResidualsPlot(double yarray[], double resyfound[], double eyfound[], const int size);
 
 class Validation
 {
 public:
   Validation();
-  void PlotMathieson2D();
+  void PlotMathieson2D(Double_t x, Double_t y, int nsamples);
   void InfoDE819b();
   void InfoDE819nb();
-  void TestClustering();
+  std::vector<Clustering::Cluster> TestClustering();
     ssize_t getNumberOfDigits();
     void storeDigits(void* bufferPtr);
     
@@ -47,6 +50,7 @@ private:
     vector<double> lowysb;
     vector<double> lowxsnb;
     vector<double> lowysnb;
+    
     
     std::vector< std::unique_ptr<mch::Digit> > digits;
     mch::Digit* digitsBuffer;

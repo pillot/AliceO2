@@ -69,18 +69,22 @@ Double_t myMathieson2D2hits(Double_t *x, Double_t *par){
 }
 
 //________________________________________________________________________________________
-void myMath(){
+void myMath1hit(Double_t x, Double_t y){
 
     // ONE HIT
     
-//    TF2 *f1 = new TF2("myMath",myMathieson2D,-10,10,-10,10,4);
-//    f1->SetParameters(0.5085, 0.5840, 0, 0.5);
-//    f1->SetParNames("K3x", "K3y", "Mean x", "Mean y");
+    TF2 *f1 = new TF2("myMath",myMathieson2D,-10,10,-10,10,4);
+    f1->SetParameters(0.5085, 0.5840, x, y);
+    f1->SetParNames("K3x", "K3y", "Mean x", "Mean y");
+}
+    
+//________________________________________________________________________________________
+void myMath2hits(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t chg1, Double_t chg2){
     
     // TWO HITS
     
     TF2 *f1 = new TF2("myMath",myMathieson2D2hits,-10,10,-10,10,8);
-    f1->SetParameters(0.5085, 0.5840, 1, 1, 2, 5, 1, 1.5);
+    f1->SetParameters(0.5085, 0.5840, x1, y1, x2, y2, chg1, chg2);
     f1->SetParNames("K3x", "K3y", "Mean1 x", "Mean1 y", "Mean2 x", "Mean2 y", "Charge1", "Charge2");
     //f1->Draw("colz");
 }
@@ -93,13 +97,13 @@ void myMath(){
 //           - DIGIT CREATION
 
 //________________________________________________________________________________________
-void Validation::PlotMathieson2D(){
+void Validation::PlotMathieson2D(Double_t x, Double_t y, int nsamples){
     
     digits.clear();
     
     TH2F* hb(NULL);
     TH2F* hnb(NULL);
-    myMath();
+    myMath1hit(x, y);
     
     o2::mch::mapping::CathodeSegmentation catsegb(819, kTRUE);
     o2::mch::mapping::CathodeSegmentation catsegnb(819, kFALSE);
@@ -123,13 +127,21 @@ void Validation::PlotMathieson2D(){
     std::copy(lowxsnb.begin(), lowxsnb.end(), xlowsnb);
     std::copy(lowysnb.begin(), lowysnb.end(), ylowsnb);
     
+    double noise;
+    
     //Création et remplissage histogrammes bending
     
     cout << "Generating histograms bending and non-bending..."<< endl;
     
     hb = new TH2F("hb","hb",lowxsb.size()-1,xlowsb,lowysb.size()-1,ylowsb);
     gRandom->SetSeed(0);
-    hb->FillRandom("myMath", /*nsamples=*/2000);
+    hb->FillRandom("myMath", /*nsamples=*/nsamples);
+    
+    TRandom *noisegen = new TRandom(321);
+    for(int bin=0; bin<(lowxsb.size()+1)*(lowysb.size()+1); bin++){
+        noise = noisegen->Gaus(1,0);
+        hb->AddBinContent(bin, noise);
+    }
     
     TCanvas *c2 = new TCanvas("c2", "The road to PlotDorado",
                               200,10,600,400);
@@ -155,7 +167,12 @@ void Validation::PlotMathieson2D(){
     //Création et remplissage histogrammes non-bending
     
     hnb = new TH2F("hnb","hnb",lowxsnb.size()-1,xlowsnb,lowysnb.size()-1,ylowsnb);
-    hnb->FillRandom("myMath", /*nsamples=*/2000);
+    hnb->FillRandom("myMath", /*nsamples=*/nsamples);
+    
+    for(int bin=0; bin<(lowxsnb.size()+1)*(lowysnb.size()+1); bin++){
+        noise = noisegen->Gaus(1,0);
+        hnb->AddBinContent(bin, noise);
+    }
     
     c2->cd(2);
     hnb->SetTitle("Mathieson 2D Distribution - Non-Bending plane - DE819");
@@ -237,7 +254,7 @@ void Validation::PlotMathieson2D(){
     cout << "Nombre de bins non-bending : " << nbbinsnb << " Nombre de pads non-bending : " << nopadsnb << endl;
     
     for(int i=0; i<nopadsb + nopadsnb; i++){
-        if(charge[i] > 2){  //Couper le bruit type
+        if(charge[i] > 6){  //Couper le bruit type (6ADC = 2*seuil de 3ADC, seuil de 3adc vient de 3*bruit/0.8)
 
           //  cout << "Un digit est en cours de création..." << endl;
 
@@ -455,10 +472,11 @@ void Validation::InfoDE819nb(){
 //PART RUNNING THE PRECLUSTERING AND CLUSETRING FOLLOWING CHOSEN METHOD, BASED ON DIGITS OBTAINED FROM ABOVE
 
 //________________________________________________________________________________________
-void Validation::TestClustering(){
+std::vector<Clustering::Cluster> Validation::TestClustering(){
     
     cout << "Filling buffer of digits..." << endl;
     
+    Digit* digitsBuffer = NULL;
     nDigits = getNumberOfDigits();
     digitsBuffer = (mch::Digit*)realloc(digitsBuffer, sizeof(mch::Digit) * nDigits);
     storeDigits(digitsBuffer);
@@ -494,20 +512,26 @@ void Validation::TestClustering(){
           
     
     //To run COG Clustering
-//        clustering.runFinderCOG(preClusters, clusters);
+ //      clustering.runFinderCOG(preClusters, clusters);
 //        printf("Number of clusters obtained and saved: %lu\n", clusters.size());
     
     
     //To run Mathieson fit Clustering
- //      clustering.runFinderSimpleFit(preClusters, clusters);
+       clustering.runFinderSimpleFit(preClusters, clusters);
           
     
     //To run Gaussian fit Clustering
-  //        clustering.runFinderGaussianFit(preClusters, clusters);
+ //         clustering.runFinderGaussianFit(preClusters, clusters);
     
     
     //To run Double Gaussian fit Clustering
-    clustering.runFinderDoubleGaussianFit(preClusters, clusters);
+  //  clustering.runFinderDoubleGaussianFit(preClusters, clusters);
+    
+    delete digitsBuffer;
+    delete preClustersBuffer;
+    
+    return clusters;
+
 }
 
 //________________________________________________________________________________________
@@ -630,6 +654,43 @@ void ResidualsCompare(){
     c10->Update();
     c10->Draw();
     
+    
+}
+
+void ResidualsPlot(double yarray[], double resyfound[], double eyfound[], int size){
+    
+    const int n = size;
+    
+    Double_t eyinput[n];
+    for(int i=0; i<n; i++){
+        eyinput[i]=0;
+    }
+    
+    
+    TCanvas *cerr = new TCanvas("cerr","GraphErrors example",0,0,600,600);
+    
+    TGraphErrors *gr1 = new TGraphErrors(n, yarray, resyfound, eyinput, eyfound);
+    gr1->SetTitle("Residuals wrt input y");
+    gr1->SetMarkerColor(4);
+    gr1->SetLineColor(4);
+    gr1->SetMarkerStyle(8);
+    gr1->GetXaxis()->SetTitle("y input (cm)");
+    gr1->GetYaxis()->SetTitle("Residual (cm)");
+    gr1->Draw("AP");
+    cerr->Update();
+    cerr->Draw();
+    
+    
+    TCanvas *cbell = new TCanvas("cbell","Bell",0,0,600,600);
+    TH1F *h1 = new TH1F("h1", "Residuals distribution", 50, -0.1, 0.1);
+    for(int i=0; i<n; i++){
+        h1->Fill(resyfound[i]);
+    }
+    h1->GetXaxis()->SetTitle("Residual y (cm)");
+    h1->GetYaxis()->SetTitle("Count");
+    h1->Draw();
+    cbell->Update();
+    cbell->Draw();
     
 }
 

@@ -1488,7 +1488,7 @@ Clustering::Cluster Clustering::ComputePositionDoubleGaussianFit(std::vector<Dig
     Double_t chgfracx = 0.6233;
     Double_t chgfracy = 0.6519;
 
-    Double_t arg(2); // disable printout
+    Double_t arg(-1); // disable printout
 
     for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
     {
