@@ -15,6 +15,7 @@
 #include "MCHPreClustering/PreClusterBlock.h"
 #include "MCHPreClustering/PreClusterFinder.h"
 #include "TBDigitsFileReader.h"
+#include "MCHClustering/ClusteringForTest.h"
 
 using namespace o2::mch;
 using namespace std;
@@ -24,18 +25,26 @@ int main(int argc, char** argv)
   TBDigitsFileReader digitsReader(argv[1]);
   PreClusterFinder preClusterFinder;
   PreClusterBlock preClusterBlock;
+  Clustering clustering;
   
   std::string fname;
   preClusterFinder.init(fname);
 
   Digit* digitsBuffer = NULL;
   char* preClustersBuffer = NULL;
-
+    std::vector<Clustering::Cluster> clusters(0);
+    
   // load digits from binary input file, block-by-block
   while(digitsReader.readDigitsFromFile()) {
+      clusters.clear();
 
     // get number of loaded digits and store them into a memory buffer
     auto nDigits = digitsReader.getNumberOfDigits();
+      float xtrk;
+      float ytrk;
+    digitsReader.get_trk_pos(819, xtrk, ytrk);
+      cout << "xtrk: " << xtrk << endl;
+      cout << "ytrk: " << ytrk << endl;
     printf("nDigits: %d\n", (int)nDigits);
     //continue;
     digitsBuffer = (Digit*)realloc(digitsBuffer, sizeof(Digit) * nDigits);
@@ -57,7 +66,15 @@ int main(int argc, char** argv)
 
     std::vector<PreClusterStruct> preClusters;
     preClusterBlock.readPreClusters(preClusters, preClustersBuffer, preClustersSize);
+      
+      printf("\n\n==========\nRunning Clustering\n\n");
 
+      // Fit Mathieson
+      clustering.runFinderSimpleFit(preClusters, clusters);
+      float yobtenu = clusters[0].gety();
+      float difference = ytrk-yobtenu;
+      cout << "Residual y: " << difference <<endl;
+      
     //break;
   }
 
