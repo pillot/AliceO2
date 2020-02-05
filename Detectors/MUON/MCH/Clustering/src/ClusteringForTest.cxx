@@ -172,6 +172,11 @@ Clustering::Cluster Clustering::FinderCOG(std::vector<Digit> &precluster)
                  xsize[cathode] /= multiplicity[cathode];
                  ysize[cathode] /= multiplicity[cathode];
                }
+                else if( multiplicity[cathode] == 0)
+                {
+                    xsize[cathode] = 1E9;
+                    ysize[cathode] = 1E9;
+                }
         cout << "\nPost-calcul cathode:" << cathode << endl;
         cout << "x:" << x[cathode] << endl;
         cout << "y:" << y[cathode] << endl;
@@ -762,9 +767,17 @@ Clustering::Cluster Clustering::ComputePosition(std::vector<Digit> &precluster, 
 
     for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
     {
-
+        fitter->Clear();
         fitter->ExecuteCommand("SET PRINT",&arg,1);
-
+        if(vecxmin[cathode]>vecxmax[cathode]){
+            vecxmin[cathode] = -40.;
+            vecxmax[cathode] = +40.;
+        }
+        if(vecymin[cathode]>vecymax[cathode]){
+            vecymin[cathode] = -20.;
+            vecymax[cathode] = +20.;
+        }
+        
         fitter->SetParameter(0,"cluster X position",xhit[cathode],stepX,vecxmin[cathode],vecxmax[cathode]);
         fitter->SetParameter(1,"cluster Y position",yhit[cathode],stepY,vecymin[cathode],vecymax[cathode]);
         fitter->SetParameter(2,"cathode",cathode,0,0,0);
@@ -782,11 +795,17 @@ Clustering::Cluster Clustering::ComputePosition(std::vector<Digit> &precluster, 
         Double_t stratArg(2);
         fitter->ExecuteCommand("SET STR",&stratArg,1);
         Int_t val = fitter->ExecuteCommand("MIGRAD",0,0);
-        if ( val )
+        if ( val && chargetot[cathode] != 0 )
         {
-        // fit failed. Using COG results, with big errors
-        cout << "Fit failed. Using COG results for cluster" << endl;
-            return clustertmpCOG;
+            //Fit failed with robust strategy 2 try balanced strategy 1
+            Double_t stratArg(1);
+            fitter->ExecuteCommand("SET STR",&stratArg,1);
+            Int_t val2 = fitter->ExecuteCommand("MIGRAD",0,0);
+            if ( val2 ){
+                // fit failed. Using COG results, with big errors
+                cout << "Fit failed on viable cathode. Using COG results for cluster." << endl;
+                    return clustertmpCOG;
+            }
         }
 
         xhit[cathode] = fitter->GetParameter(0);
@@ -1225,8 +1244,16 @@ Clustering::Cluster Clustering::ComputePositionGaussianFit(std::vector<Digit> &p
 
     for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
     {
-
+        fitter->Clear();
         fitter->ExecuteCommand("SET PRINT",&arg,1);
+        if(vecxmin[cathode]>vecxmax[cathode]){
+            vecxmin[cathode] = -40.;
+            vecxmax[cathode] = +40.;
+        }
+        if(vecymin[cathode]>vecymax[cathode]){
+            vecymin[cathode] = -20.;
+            vecymax[cathode] = +20.;
+        }
 
         fitter->SetParameter(0,"cluster X position",xhit[cathode],stepX,vecxmin[cathode],vecxmax[cathode]);
         fitter->SetParameter(1,"cluster Y position",yhit[cathode],stepY,vecymin[cathode],vecymax[cathode]);
@@ -1245,11 +1272,17 @@ Clustering::Cluster Clustering::ComputePositionGaussianFit(std::vector<Digit> &p
         Double_t stratArg(2);
         fitter->ExecuteCommand("SET STR",&stratArg,1);
         Int_t val = fitter->ExecuteCommand("MIGRAD",0,0);
-        if ( val )
+        if ( val && chargetot[cathode] != 0)
         {
-        // fit failed. Using COG results, with big errors
-        cout << "Fit failed. Using COG results for cluster" << endl;
-            return clustertmpCOG;
+           //Fit failed with robust strategy 2 try balanced strategy 1
+            Double_t stratArg(1);
+            fitter->ExecuteCommand("SET STR",&stratArg,1);
+            Int_t val2 = fitter->ExecuteCommand("MIGRAD",0,0);
+            if ( val2 ){
+                // fit failed. Using COG results, with big errors
+                cout << "Fit failed on viable cathode. Using COG results for cluster." << endl;
+                    return clustertmpCOG;
+            }
         }
 
         xhit[cathode] = fitter->GetParameter(0);
@@ -1492,8 +1525,16 @@ Clustering::Cluster Clustering::ComputePositionDoubleGaussianFit(std::vector<Dig
 
     for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
     {
-
+        fitter->Clear();
         fitter->ExecuteCommand("SET PRINT",&arg,1);
+        if(vecxmin[cathode]>vecxmax[cathode]){
+            vecxmin[cathode] = -40.;
+            vecxmax[cathode] = +40.;
+        }
+        if(vecymin[cathode]>vecymax[cathode]){
+            vecymin[cathode] = -20.;
+            vecymax[cathode] = +20.;
+        }
 
         fitter->SetParameter(0,"cluster X position",xhit[cathode],stepX,vecxmin[cathode],vecxmax[cathode]);
         fitter->SetParameter(1,"cluster Y position",yhit[cathode],stepY,vecymin[cathode],vecymax[cathode]);
@@ -1516,11 +1557,17 @@ Clustering::Cluster Clustering::ComputePositionDoubleGaussianFit(std::vector<Dig
         Double_t stratArg(2);
         fitter->ExecuteCommand("SET STR",&stratArg,1);
         Int_t val = fitter->ExecuteCommand("MIGRAD",0,0);
-        if ( val )
+        if ( val && chargetot[cathode] != 0)
         {
-        // fit failed. Using COG results, with big errors
-        cout << "Fit failed. Using COG results for cluster" << endl;
-            return clustertmpCOG;
+            //Fit failed with robust strategy 2 try balanced strategy 1
+            Double_t stratArg(1);
+            fitter->ExecuteCommand("SET STR",&stratArg,1);
+            Int_t val2 = fitter->ExecuteCommand("MIGRAD",0,0);
+            if ( val2 ){
+                // fit failed. Using COG results, with big errors
+                cout << "Fit failed on viable cathode. Using COG results for cluster." << endl;
+                    return clustertmpCOG;
+            }
         }
 
         xhit[cathode] = fitter->GetParameter(0);
