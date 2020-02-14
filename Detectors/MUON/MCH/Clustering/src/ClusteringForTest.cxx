@@ -2,9 +2,26 @@
 //  ClusteringForTest.cxx
 //
 //  Algo de clustring repris de AliRoot, ClusterCOG
+//  This program implements the clustering part
+//  There are currently 4 methods implemented:
+//  CenterOfGravity, (Mathieson)SimpleFit, Gaussian Fit and Double Gaussian Fit
+//
+//  Each fit exixts in 2 variations. An old hand-wavey one where the chi2 minimisation is done manually
+//  A better one using MIGRAD
+//
+// FixMe: Find a better way (using TObject) to send digits data to the chi2 minimisation function instead of defining parameters by hand and keeping them fixed
 //
 //  Created by PERRIN Sébastien on 31/10/2019.
 //
+
+#include <chrono>
+#include <memory>
+#include <stdexcept>
+#include <iostream>
+#include <vector>
+#include <TMath.h>
+#include <stdio.h>
+#include <math.h>
 
 #include "MCHClustering/ClusteringForTest.h"
 #include "MCHBase/Digit.h"
@@ -12,7 +29,10 @@
 #include "MCHPreClustering/PreClusterFinder.h"
 #include "MCHPreClustering/PreClusterBlock.h"
 #include "TVirtualFitter.h"
-//#include "TObjArray.h"
+#include "TObject.h"
+#include "TObjArray.h"
+#include "MCHClustering/MyObjectParameters.h"
+#include "MCHClustering/MyObjectDigits.h"
 
 #include "Math/Minimizer.h"
 #include "Math/Factory.h"
@@ -20,14 +40,8 @@
 #include "TRandom2.h"
 #include "TError.h"
 
+
 //#include "TVector2.h"
-#include <chrono>
-#include <memory>
-#include <stdexcept>
-#include <vector>
-#include <TMath.h>
-#include <stdio.h>
-#include <math.h>
 
 #include <fairmq/Tools.h>
 #include <FairMQLogger.h>
@@ -297,7 +311,7 @@ void Clustering::runFinderSimpleFit(std::vector<PreClusterStruct>& preClusters, 
         }
         else{
     //    clustertmp = FinderSimpleFit(preclustertmp, clustertmpCOG);    //Fit manuel
-        clustertmp = ComputePosition(preclustertmp, clustertmpCOG);      //Fit Minuit
+        clustertmp = ComputePositionClean(preclustertmp, clustertmpCOG);      //Fit Minuit
         }
         
         clusters.push_back(clustertmp);
@@ -791,6 +805,236 @@ Clustering::Cluster Clustering::ComputePosition(std::vector<Digit> &precluster, 
             fitter->SetParameter(8+(3*j),"PadID",precluster[j].getPadID(),0,0,0);
             fitter->SetParameter(9+(3*j),"ADC",precluster[j].getADC(),0,0,0);
         }
+
+        Double_t stratArg(2);
+        fitter->ExecuteCommand("SET STR",&stratArg,1);
+        Int_t val = fitter->ExecuteCommand("MIGRAD",0,0);
+        if ( val && chargetot[cathode] != 0 )
+        {
+            //Fit failed with robust strategy 2 try balanced strategy 1
+            Double_t stratArg(1);
+            fitter->ExecuteCommand("SET STR",&stratArg,1);
+            Int_t val2 = fitter->ExecuteCommand("MIGRAD",0,0);
+            if ( val2 ){
+                // fit failed. Using COG results, with big errors
+                cout << "Fit failed on viable cathode. Using COG results for cluster." << endl;
+                    return clustertmpCOG;
+            }
+        }
+
+        xhit[cathode] = fitter->GetParameter(0);
+        yhit[cathode] = fitter->GetParameter(1);
+        xsize[cathode] = fitter->GetParError(0);
+        ysize[cathode] = fitter->GetParError(1);
+
+        Double_t amin, edm, errdef;
+        Int_t nvpar, nparx;
+
+        fitter->GetStats(amin, edm, errdef, nvpar, nparx);
+
+        Double_t chi2 = amin;
+
+        printf("Cluster fitted to (x,y)=(%e,%e) (xerr,yerr)=(%e,%e) \n chi2=%e ndf=%d",
+                        xhit[cathode],yhit[cathode],
+                        xsize[cathode],ysize[cathode],chi2,fitter->GetNumberFreeParameters());
+    }
+
+    //Détermination de la position finale du hit à l'aide de la résolution sur chaque cathode
+    Double_t xhitfinal = xhit[0];
+    Double_t yhitfinal = yhit[1];
+    Double_t ex = xsize[0];
+    Double_t ey = ysize[1];
+
+    double timestamp = precluster[0].getTimeStamp();  // On récupère le timestamp du premier digit du precluster
+
+
+    //On remplit un cluster avec les infos nécessaires
+    cluster.setx(xhitfinal);
+    cluster.sety(yhitfinal);
+    cluster.setex(ex);
+    cluster.setey(ey);
+    cluster.settimestamp(timestamp);    // En première approx. on peut affecter le timestamp du pre;ier digit au cluster
+
+            printf("\n\nCluster par simple fit:\nCluster multiplicity %ld \n(x,y)=(%e,%e) \nprecision=(ex,ey)=(%e,%e) \ntimestamp = %lf \n\n",precluster.size(),cluster.getx(),cluster.gety(),cluster.getex(),cluster.getey(),cluster.gettimestamp());
+
+    return cluster;
+}
+
+//_________________________________________________________________________________________________
+
+//_________________________________________________________________________________________________
+void FitFunctionClean(Int_t& /*notused*/, Double_t* /*notused*/,
+                            Double_t& sum, Double_t* par,
+                             Int_t /*notused*/)
+  {
+    /// Chi2 Function to minimize: Mathieson charge distribution in 2 dimensions
+      
+          //Méthode propre. On amène un pointeur vers les digits aue l'on peut lire un par un. Et un TArray avec les autres parametres (cathode, chgtot, Kx3, Ky3, nbdigits)
+
+    TObjArray* userObjects = static_cast<TObjArray*>(TVirtualFitter::GetFitter()->GetObjectFit());
+
+    MyObjectDigits* digits = static_cast<MyObjectDigits*>(userObjects->At(0));
+    MyObjectParameters* parameters = static_cast<MyObjectParameters*>(userObjects->At(1));
+      
+      Clustering cluster;
+
+    sum = 0.0;
+      
+      int cathode = parameters->getfCathode();
+      double chargetot = parameters->getfChargetot();
+      double Kx3 = parameters->getfKx3();
+      double Ky3 = parameters->getfKy3();
+      int nbdigits = parameters->getfNbdigits();
+      
+    for(Int_t i = 0; i < nbdigits; ++i){
+
+//        Digit digitbeingread = *digitsptr;
+//        digitsptr++;
+        
+        Digit digitbeingread = (digits->getfDigits())[i];
+        
+        int detid = digitbeingread.getDetID();
+        int padid = digitbeingread.getPadID();
+        int ADC = digitbeingread.getADC();
+        
+        mapping::Segmentation pad(detid); // = mapping::Segmentation(detid);
+
+        if ( cathode == pad.isBendingPad(padid) ) //On regarde à quelle cathode appartient le pad
+        {
+              //On définit le vecteur position et taille du pad en question
+            std::vector<Double_t> padPosition = {pad.padPositionX(padid), pad.padPositionY(padid)};
+            std::vector<Double_t> padSize = {pad.padSizeX(padid), pad.padSizeY(padid)};
+
+            std::vector<Double_t> lowerLeft = {par[0] - padPosition[0] - 0.5*padSize[0], par[1] - padPosition[1] - 0.5*padSize[1]};
+            std::vector<Double_t> upperRight= {lowerLeft[0] + padSize[0], lowerLeft[1] + padSize[1]};
+
+            Double_t qfit = chargetot*cluster.IntMathiesonXY(lowerLeft[0], lowerLeft[1], upperRight[0], upperRight[1], Kx3, Ky3);
+
+            Double_t qtrue = ADC;
+
+            Double_t delta = qtrue-qfit;
+
+            sum += pow(delta,2)/qtrue;
+        }
+    }
+}
+
+//_________________________________________________________________________________________________
+Clustering::Cluster Clustering::ComputePositionClean(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG)
+{
+  /// Compute the position of the given cluster, by fitting a Mathieson
+  /// charge distribution to it
+
+    Double_t vecxmin[2] = {1E3, 1E3};
+    Double_t vecxmax[2] = {-1E3, -1E3};
+    Double_t vecymin[2] = {1E3, 1E3};
+    Double_t vecymax[2] = {-1E3, -1E3};
+    
+  TVirtualFitter* fitter = TVirtualFitter::Fitter(0,2);
+  fitter->SetFCN(FitFunctionClean);
+
+  cout << "\n\n==========\nRunning MinuitMathieson Algorithm.\n\n" << endl;
+
+  Cluster cluster;
+
+  //Création des vecteurs position du hit sur chaque cqthode
+  Double_t xhit[2] = { clustertmpCOG.getx(), clustertmpCOG.getx() };
+  Double_t yhit[2] = { clustertmpCOG.gety(), clustertmpCOG.gety() };
+
+    //Création des vecteurs de charge totale, multiplicité et tailles sur chaque cathode
+       Double_t chargetot[2] = { 0.0, 0.0 };
+       Double_t multiplicity[2] = { 0.0, 0.0 };
+       Double_t xsize[2] = { 0.0, 0.0 };
+       Double_t ysize[2] = { 0.0, 0.0 };
+
+   //Détermination des vecteurs de charge totale, multiplicité et taille qui devient précision
+   for ( Int_t i = 0; i < precluster.size(); ++i ){
+       int detid = precluster[i].getDetID();
+       int padid = precluster[i].getPadID();
+       
+       mapping::Segmentation pad(detid); // = mapping::Segmentation(detid);
+
+       for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
+       {
+
+           if ( cathode == pad.isBendingPad(padid) ) //On regarde à quelle cathode appartient le pad
+                   {
+                       std::vector<Double_t> padPosition = {pad.padPositionX(padid), pad.padPositionY(padid)};
+                       std::vector<Double_t> padSize = {pad.padSizeX(padid), pad.padSizeY(padid)};
+                       
+                       vecxmin[cathode] = TMath::Min(padPosition[0]-0.5*padSize[0],vecxmin[cathode]);
+                       vecxmax[cathode] = TMath::Max(padPosition[0]+0.5*padSize[0],vecxmax[cathode]);
+                       vecymin[cathode] = TMath::Min(padPosition[1]-0.5*padSize[1],vecymin[cathode]);
+                       vecymax[cathode] = TMath::Max(padPosition[1]+0.5*padSize[1],vecymax[cathode]);
+
+                       chargetot[cathode] += precluster[i].getADC();
+                       multiplicity[cathode] += 1;
+                   }
+       }
+   }
+    
+
+  Float_t stepX = 0.00001; // cm
+  Float_t stepY = 0.00001; // cm
+    Double_t Kx3 = 0.5085;
+    Double_t Ky3 = 0.5840;
+    
+    cout << "On va déclarer les Myobjdig" << endl;
+
+    MyObjectDigits digits;
+    
+    cout << "On va set digits" << endl;
+    
+    digits.setfDigits(precluster);
+    cout << "ZWIP" << endl;
+    std::vector<Digit> vectory = digits.getfDigits();
+     cout << "ZOUP" << endl;
+    Digit loule = vectory[0];
+    cout << "ZAPPP" << endl;
+    cout << "ADC du digit 0: " << loule.getADC() << endl;
+    cout << "On va declarer les myobjar" << endl;
+    MyObjectParameters parameters;
+    
+    Double_t arg(-1); // disable printout
+
+    for ( int cathode = 0; cathode < 2; ++cathode ) //On boucle sur les deux plans de cathodes
+    {
+        fitter->Clear();
+        fitter->ExecuteCommand("SET PRINT",&arg,1);
+        if(vecxmin[cathode]>vecxmax[cathode]){
+            vecxmin[cathode] = -40.;
+            vecxmax[cathode] = +40.;
+        }
+        if(vecymin[cathode]>vecymax[cathode]){
+            vecymin[cathode] = -20.;
+            vecymax[cathode] = +20.;
+        }
+        cout << "On va set les params" << endl;
+        cout << "On va set cathode" << endl;
+        parameters.setfCathode(cathode);
+        cout << "On va set chgtot" << endl;
+        parameters.setfChargetot(chargetot[cathode]);
+        cout << "On va set kx" << endl;
+         parameters.setfKx3(Kx3);
+        cout << "On va set ky" << endl;
+        parameters.setfKy3(Ky3);
+        cout << "On va set nbdigit" << endl;
+        parameters.setfNbdigits(precluster.size());
+        
+        cout << "On va declarer le tobjarray" << endl;
+        
+        TObjArray userObjects;
+        cout << "On va add les myobj" << endl;
+        userObjects.Add(&digits);
+        userObjects.Add(&parameters);
+        cout << "On va set les userobj" << endl;
+        fitter->SetObjectFit(&userObjects);
+        
+        cout << "On va set les params fit" << endl;
+        
+        fitter->SetParameter(0,"cluster X position",xhit[cathode],stepX,vecxmin[cathode],vecxmax[cathode]);
+        fitter->SetParameter(1,"cluster Y position",yhit[cathode],stepY,vecymin[cathode],vecymax[cathode]);
+        
 
         Double_t stratArg(2);
         fitter->ExecuteCommand("SET STR",&stratArg,1);

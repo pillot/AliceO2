@@ -73,7 +73,7 @@ int main(int argc, char** argv)
       clustering.runFinderSimpleFit(preClusters, clusters);
       float yobtenu = clusters[0].gety();
       float difference = ytrk-yobtenu;
-      cout << "Residual y: " << difference <<endl;
+      cout << "RESIDUAL y: " << difference <<endl;
       
     //break;
   }

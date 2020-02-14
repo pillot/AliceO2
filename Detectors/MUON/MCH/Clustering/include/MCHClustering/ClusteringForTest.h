@@ -91,6 +91,7 @@ class Clustering
     Double_t IntMathiesonXY(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t Kx3, Double_t Ky3);
     
     Clustering::Cluster ComputePosition(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
+    Clustering::Cluster ComputePositionClean(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
     Clustering::Cluster ComputePositionGaussianFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
     
     void runFinderGaussianFit(std::vector<PreClusterStruct>& preClusters, std::vector<Cluster>& clusters);
@@ -115,6 +116,9 @@ class Clustering
 };
 
 void FitFunction(Int_t& /*notused*/, Double_t* /*notused*/,
+Double_t& sum, Double_t* par,
+ Int_t /*notused*/);
+void FitFunctionClean(Int_t& /*notused*/, Double_t* /*notused*/,
 Double_t& sum, Double_t* par,
  Int_t /*notused*/);
 void FitFunctionGaussianFit(Int_t& /*notused*/, Double_t* /*notused*/,

@@ -8,6 +8,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+// This program serves as a closure test of clustering methods
+// It calls function in the validation class to generate ideal hits and reconstruct them
+
 #include <fstream>
 #include <cstdio>
 
@@ -54,8 +57,8 @@ int main(int argc, char** argv){
     TRandom *chggen = new TRandom(123);
 
     for(int i=0; i<50; i++){
-        yarray[i] = ygen->Uniform(-20,20);
-        xarray[i] = xgen->Uniform(-40,40);
+        yarray[i] = ygen->Uniform(0,0.5);
+        xarray[i] = 0; //xgen->Uniform(-40,40);
         chg[i] = chggen->Uniform(20,2000);
     }
 
