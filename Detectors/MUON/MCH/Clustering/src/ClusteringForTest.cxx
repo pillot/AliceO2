@@ -31,12 +31,10 @@
 #include "TVirtualFitter.h"
 #include "TObject.h"
 #include "TObjArray.h"
-#include "MCHClustering/MyObjectParameters.h"
+#include "TVectorT.h"
 #include "MCHClustering/MyObjectDigits.h"
+#include "MCHClustering/MyObjectParameters.h"
 
-#include "Math/Minimizer.h"
-#include "Math/Factory.h"
-#include "Math/Functor.h"
 #include "TRandom2.h"
 #include "TError.h"
 
@@ -51,12 +49,14 @@ namespace o2
 namespace mch
 {
 
+// templateClassImp(TVectorT);
+
 using namespace std;
+
 
 //_________________________________________________________________________________________________
 void Clustering::runFinderCOG(std::vector<PreClusterStruct>& preClusters, std::vector<Cluster>& clusters)
 {
-    
     cout << "preClusters.size():" << preClusters.size() << endl;
     int sizedigit;
     int jete = 0;
@@ -872,13 +872,17 @@ void FitFunctionClean(Int_t& /*notused*/, Double_t* /*notused*/,
           //Méthode propre. On amène un pointeur vers les digits aue l'on peut lire un par un. Et un TArray avec les autres parametres (cathode, chgtot, Kx3, Ky3, nbdigits)
 
     TObjArray* userObjects = static_cast<TObjArray*>(TVirtualFitter::GetFitter()->GetObjectFit());
-
-    MyObjectDigits* digits = static_cast<MyObjectDigits*>(userObjects->At(0));
-    MyObjectParameters* parameters = static_cast<MyObjectParameters*>(userObjects->At(1));
+      
+      MyObjectDigits* digits = static_cast<MyObjectDigits*>(userObjects->At(0));
+      MyObjectParameters* parameters = static_cast<MyObjectParameters*>(userObjects->At(1));
+      
+//    TVectorT<Digit>* digits = static_cast<TVectorT<Digit>*>(userObjects->At(0));
+//    TVectorT<double>* parameters = static_cast<TVectorT<double>*>(userObjects->At(1));
       
       Clustering cluster;
 
     sum = 0.0;
+      
       
       int cathode = parameters->getfCathode();
       double chargetot = parameters->getfChargetot();
@@ -886,12 +890,20 @@ void FitFunctionClean(Int_t& /*notused*/, Double_t* /*notused*/,
       double Ky3 = parameters->getfKy3();
       int nbdigits = parameters->getfNbdigits();
       
+//      int cathode = parameters->operator()(0);
+//      double chargetot = parameters->operator()(1);
+//      double Kx3 = parameters->operator()(2);
+//      double Ky3 = parameters->operator()(3);
+//      int nbdigits = parameters->operator()(4);
+      
     for(Int_t i = 0; i < nbdigits; ++i){
 
 //        Digit digitbeingread = *digitsptr;
 //        digitsptr++;
-        
+      
         Digit digitbeingread = (digits->getfDigits())[i];
+        
+    //   Digit digitbeingread = digits->operator()(i);
         
         int detid = digitbeingread.getDetID();
         int padid = digitbeingread.getPadID();
@@ -979,21 +991,17 @@ Clustering::Cluster Clustering::ComputePositionClean(std::vector<Digit> &preclus
     Double_t Kx3 = 0.5085;
     Double_t Ky3 = 0.5840;
     
-    cout << "On va déclarer les Myobjdig" << endl;
-
+    
     MyObjectDigits digits;
+
+//    Digit* digitptr = &precluster[0];
+//    TVectorT<Digit> digits = TVectorT<Digit>(precluster.size(), digitptr);
     
     cout << "On va set digits" << endl;
-    
     digits.setfDigits(precluster);
-    cout << "ZWIP" << endl;
-    std::vector<Digit> vectory = digits.getfDigits();
-     cout << "ZOUP" << endl;
-    Digit loule = vectory[0];
-    cout << "ZAPPP" << endl;
-    cout << "ADC du digit 0: " << loule.getADC() << endl;
-    cout << "On va declarer les myobjar" << endl;
-    MyObjectParameters parameters;
+    cout << (digits.getfDigits())[0].getADC() << " est ADC du premier digit" << endl;
+  //  Digit loule = digits.operator()(0);
+   // cout << "ADC du digit 0: " << loule.getADC() << endl;
     
     Double_t arg(-1); // disable printout
 
@@ -1010,27 +1018,23 @@ Clustering::Cluster Clustering::ComputePositionClean(std::vector<Digit> &preclus
             vecymax[cathode] = +20.;
         }
         cout << "On va set les params" << endl;
-        cout << "On va set cathode" << endl;
+        
+        MyObjectParameters parameters;
         parameters.setfCathode(cathode);
-        cout << "On va set chgtot" << endl;
         parameters.setfChargetot(chargetot[cathode]);
-        cout << "On va set kx" << endl;
-         parameters.setfKx3(Kx3);
-        cout << "On va set ky" << endl;
+        parameters.setfKx3(Kx3);
         parameters.setfKy3(Ky3);
-        cout << "On va set nbdigit" << endl;
         parameters.setfNbdigits(precluster.size());
         
-        cout << "On va declarer le tobjarray" << endl;
+//        double params[5] = {static_cast<double>(cathode), chargetot[cathode], Kx3, Ky3, static_cast<double>(precluster.size())};
+//        double* paramptr = &params[0];
+//        TVectorT<double> parameters = TVectorT<double>(5, paramptr);
+        
         
         TObjArray userObjects;
-        cout << "On va add les myobj" << endl;
         userObjects.Add(&digits);
         userObjects.Add(&parameters);
-        cout << "On va set les userobj" << endl;
         fitter->SetObjectFit(&userObjects);
-        
-        cout << "On va set les params fit" << endl;
         
         fitter->SetParameter(0,"cluster X position",xhit[cathode],stepX,vecxmin[cathode],vecxmax[cathode]);
         fitter->SetParameter(1,"cluster Y position",yhit[cathode],stepY,vecymin[cathode],vecymax[cathode]);

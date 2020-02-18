@@ -1,6 +1,8 @@
 #ifndef ALICEO2_MCH_MYOBJECTDIGITS_H_
 #define ALICEO2_MCH_MYOBJECTDIGITS_H_
 
+
+#include <TROOT.h>
 #include "TObject.h"
 #include <iostream>
 #include <vector>
@@ -33,16 +35,16 @@ using namespace std;
 class MyObjectDigits : public TObject
 {
  public:
-  MyObjectDigits() {};
-  ~MyObjectDigits() {};
+    MyObjectDigits();
+    virtual ~MyObjectDigits();
 
   std::vector<Digit> getfDigits() const { return fDigits; }
   void setfDigits(std::vector<Digit> vectdigits) { fDigits = vectdigits; }
+    
+    ClassDef(MyObjectDigits, 1);
 
  private:
     std::vector<Digit> fDigits;
-
-    ClassDef(MyObjectDigits, 1);
 };
 
 }

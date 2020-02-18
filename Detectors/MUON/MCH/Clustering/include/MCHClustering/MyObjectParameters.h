@@ -45,9 +45,9 @@ using namespace std;
 class MyObjectParameters : public TObject
 {
  public:
-  MyObjectParameters() = default;
-  MyObjectParameters(int cathode, double chargetot, double Ky3, double Kx3, int Nbdigits);
-  virtual ~MyObjectParameters() = default;
+    MyObjectParameters();
+  //MyObjectParameters(int cathode, double chargetot, double Ky3, double Kx3, int Nbdigits);
+    virtual ~MyObjectParameters();
 
   int getfCathode() const { return fCathode; }
   void setfCathode(int cathode) { fCathode = cathode; }
@@ -59,6 +59,8 @@ class MyObjectParameters : public TObject
     void setfKx3(double Kx3) { fKx3 = Kx3; }
     int getfNbdigits() const { return fNbdigits; }
     void setfNbdigits(int Nbdigits) { fNbdigits = Nbdigits; }
+    
+    ClassDef(MyObjectParameters, 1);
 
  private:
     int fCathode;
@@ -67,7 +69,6 @@ class MyObjectParameters : public TObject
     double fKx3;
     int fNbdigits;
 
-  ClassDef(MyObjectParameters, 1);
 };
 
 }
