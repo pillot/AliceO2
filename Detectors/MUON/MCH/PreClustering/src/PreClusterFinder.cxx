@@ -42,7 +42,7 @@ void PreClusterFinder::init(std::string& fileName)
     }
   }
 
-  fpreclus = fopen("preclusters.txt", "w");
+//  fpreclus = fopen("preclusters.txt", "w");
 }
 
 //_________________________________________________________________________________________________
@@ -348,10 +348,10 @@ PreClusterFinder::PreCluster* PreClusterFinder::usePreClusters(PreCluster* clust
 
   cluster->storeMe = true;
 
-  fprintf(fpreclus,"DE=%d  firstPad=%d  lastPad=%d  area=(%0.3f,%0.3f) -> (%0.3f,%0.3f)\n",
-      (int)de.mapping->uid, (int)cluster->firstPad, (int)cluster->lastPad,
-      (float)cluster->area[0][0],(float)cluster->area[1][0],
-      (float)cluster->area[0][1],(float)cluster->area[1][1]);
+//  fprintf(fpreclus,"DE=%d  firstPad=%d  lastPad=%d  area=(%0.3f,%0.3f) -> (%0.3f,%0.3f)\n",
+//      (int)de.mapping->uid, (int)cluster->firstPad, (int)cluster->lastPad,
+//      (float)cluster->area[0][0],(float)cluster->area[1][0],
+//      (float)cluster->area[0][1],(float)cluster->area[1][1]);
 
   return cluster;
 }
