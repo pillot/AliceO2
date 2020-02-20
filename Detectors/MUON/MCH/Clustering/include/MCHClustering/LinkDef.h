@@ -5,7 +5,9 @@
 #pragma link off all functions;
 
 #pragma link C++ class o2::mch::MyObjectDigits+;
-#pragma link C++ class o2::mch::MyObjectParameters+;
+#pragma link C++ class o2::mch::MyObjectParametersMathieson+;
+#pragma link C++ class o2::mch::MyObjectParametersGauss+;
+#pragma link C++ class o2::mch::MyObjectParametersDoubleGauss+;
 
 
 #endif
