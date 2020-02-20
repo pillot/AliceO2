@@ -85,40 +85,50 @@ class Clustering
     void runFinderCOG(std::vector<PreClusterStruct>& preClusters, std::vector<Cluster>& clusters);
     Clustering::Cluster FinderCOG(std::vector<Digit> &precluster);
 
+    
     void runFinderSimpleFit(std::vector<PreClusterStruct>& preClusters, std::vector<Cluster>& clusters);
-    Clustering::Cluster FinderSimpleFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
-    Double_t Chi2Mathieson(int cathode, Double_t chargetot, std::vector<Digit> &precluster, Clustering::Cluster clustertmp, Double_t xhit, Double_t yhit, Double_t Kx3, Double_t Ky3);
+    Clustering::Cluster ComputePositionClean(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
     Double_t IntMathiesonXY(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t Kx3, Double_t Ky3);
     
-    Clustering::Cluster ComputePosition(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
-    Clustering::Cluster ComputePositionClean(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
-    Clustering::Cluster ComputePositionGaussianFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
     
     void runFinderGaussianFit(std::vector<PreClusterStruct>& preClusters, std::vector<Cluster>& clusters);
-    Clustering::Cluster FinderGaussianFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
-    Double_t Chi2Gauss(int cathode, Double_t chargetot, std::vector<Digit> &precluster, Clustering::Cluster clustertmp, Double_t xhit, Double_t yhit, Double_t sigx, Double_t sigy);
+    Clustering::Cluster ComputePositionGaussianFitClean(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
     Double_t IntGaussXY(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t sigx, Double_t sigy);
     
     
-
-//    Clustering::Cluster* runFinderGaussianFit(std::string& buffer);
-//    Clustering::Cluster* FinderGaussianFit(std::vector<Digit> &precluster, Clustering::Cluster* clustertmp);
-//    float Chi2Gauss(int cathode, Double_t chargetot, std::vector<Digit> &precluster, Clustering::Cluster* clustertmp, float xhit, float yhit, float sigx, float sigy);
-//    
-//    float IntGaussXY(float x1, float y1, float x2, float y2, float xhit, float sigx, float yhit, float sigy);
-    
     void runFinderDoubleGaussianFit(std::vector<PreClusterStruct>& preClusters, std::vector<Cluster>& clusters);
-    Clustering::Cluster ComputePositionDoubleGaussianFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
+    Clustering::Cluster ComputePositionDoubleGaussianFitClean(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
     Double_t IntDoubleGaussXY(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t sig1x, Double_t sig1y, Double_t sig2x, Double_t sig2y, Double_t chgfracx, Double_t chgfracy);
 
     
 //    void ComparisonMathiesonGauss(std::string& buffer);
+    
+    
+    
+    // FONCTIONS OBSOLETES
+    Clustering::Cluster FinderSimpleFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
+    Double_t Chi2Mathieson(int cathode, Double_t chargetot, std::vector<Digit> &precluster, Clustering::Cluster clustertmp, Double_t xhit, Double_t yhit, Double_t Kx3, Double_t Ky3);
+    Clustering::Cluster ComputePosition(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
+    Clustering::Cluster FinderGaussianFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
+    Double_t Chi2Gauss(int cathode, Double_t chargetot, std::vector<Digit> &precluster, Clustering::Cluster clustertmp, Double_t xhit, Double_t yhit, Double_t sigx, Double_t sigy);
+    Clustering::Cluster ComputePositionGaussianFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
+    
+    Clustering::Cluster ComputePositionDoubleGaussianFit(std::vector<Digit> &precluster, Clustering::Cluster clustertmpCOG);
+    
 };
 
-void FitFunction(Int_t& /*notused*/, Double_t* /*notused*/,
+void FitFunctionClean(Int_t& /*notused*/, Double_t* /*notused*/,
 Double_t& sum, Double_t* par,
  Int_t /*notused*/);
-void FitFunctionClean(Int_t& /*notused*/, Double_t* /*notused*/,
+void FitFunctionGaussianFitClean(Int_t& /*notused*/, Double_t* /*notused*/,
+Double_t& sum, Double_t* par,
+ Int_t /*notused*/);
+void FitFunctionDoubleGaussianFitClean(Int_t& /*notused*/, Double_t* /*notused*/,
+Double_t& sum, Double_t* par,
+Int_t /*notused*/);
+
+//FONCTIONS OBSOLETES
+void FitFunction(Int_t& /*notused*/, Double_t* /*notused*/,
 Double_t& sum, Double_t* par,
  Int_t /*notused*/);
 void FitFunctionGaussianFit(Int_t& /*notused*/, Double_t* /*notused*/,
@@ -127,7 +137,6 @@ Double_t& sum, Double_t* par,
 void FitFunctionDoubleGaussianFit(Int_t& /*notused*/, Double_t* /*notused*/,
 Double_t& sum, Double_t* par,
 Int_t /*notused*/);
-
 
 } // namespace mch
 } // namespace o2
