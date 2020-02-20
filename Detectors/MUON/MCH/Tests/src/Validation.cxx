@@ -104,6 +104,7 @@ void Validation::PlotMathieson2D(Double_t x, Double_t y, int nsamples){
     TH2F* hb(NULL);
     TH2F* hnb(NULL);
     myMath1hit(x, y);
+    int gPrintLevel = 0;
     
     o2::mch::mapping::CathodeSegmentation catsegb(819, kTRUE);
     o2::mch::mapping::CathodeSegmentation catsegnb(819, kFALSE);
@@ -132,7 +133,7 @@ void Validation::PlotMathieson2D(Double_t x, Double_t y, int nsamples){
     //Création et remplissage histogrammes bending
     
     cout << "Generating histograms bending and non-bending..."<< endl;
-    
+
     hb = new TH2F("hb","hb",lowxsb.size()-1,xlowsb,lowysb.size()-1,ylowsb);
     gRandom->SetSeed(0);
     hb->FillRandom("myMath", /*nsamples=*/nsamples);
@@ -199,8 +200,10 @@ void Validation::PlotMathieson2D(Double_t x, Double_t y, int nsamples){
         charge[i] = 0.;
     }
     
-    cout << "Number of bending bins = " << lowxsb.size()-1 << " x " << lowysb.size()-1 << " = " << nbbinsb << endl;
-    cout << "Number of non-bending bins = " << lowxsnb.size()-1 << " x " << lowysnb.size()-1 << " = " << nbbinsnb << endl;
+    if(gPrintLevel > 1){
+        cout << "Number of bending bins = " << lowxsb.size()-1 << " x " << lowysb.size()-1 << " = " << nbbinsb << endl;
+        cout << "Number of non-bending bins = " << lowxsnb.size()-1 << " x " << lowysnb.size()-1 << " = " << nbbinsnb << endl;
+    }
     
     
     //Remplissage digits bending plane
@@ -241,17 +244,20 @@ void Validation::PlotMathieson2D(Double_t x, Double_t y, int nsamples){
                 
                 padid = catsegnb.findPadByPosition(binxcent,binycent) + nopadsb;
                 charge[padid] += bincontent;
-                
-//                if(charge[padid] > 2){
-//                    cout << "Content of non-bending bin (binx= " << binx << ", biny= " << biny << "): " << bincontent << endl;
-//                    cout << "Center of non-bending bin (binx= " << binx << ", biny= " << biny << "): (" << binxcent << "," << binycent << ")" << endl;
-//                    cout << "Padid: " << padid << "  Charge: " << charge[padid] <<endl;
-//                }
+                if(gPrintLevel > 2){
+                    if(charge[padid] > 2){
+                        cout << "Content of non-bending bin (binx= " << binx << ", biny= " << biny << "): " << bincontent << endl;
+                        cout << "Center of non-bending bin (binx= " << binx << ", biny= " << biny << "): (" << binxcent << "," << binycent << ")" << endl;
+                        cout << "Padid: " << padid << "  Charge: " << charge[padid] <<endl;
+                    }
+                }
             }
         }
     
-    cout << "Nombre de bins bending : " << nbbinsb << " Nombre de pads bending : " << nopadsb << endl;
-    cout << "Nombre de bins non-bending : " << nbbinsnb << " Nombre de pads non-bending : " << nopadsnb << endl;
+    if(gPrintLevel > 1){
+        cout << "Nombre de bins bending : " << nbbinsb << " Nombre de pads bending : " << nopadsb << endl;
+        cout << "Nombre de bins non-bending : " << nbbinsnb << " Nombre de pads non-bending : " << nopadsnb << endl;
+    }
     
     for(int i=0; i<nopadsb + nopadsnb; i++){
         if(charge[i] > 6){  //Couper le bruit type (6ADC = 2*seuil de 3ADC, seuil de 3adc vient de 3*bruit/0.8)
@@ -264,12 +270,14 @@ void Validation::PlotMathieson2D(Double_t x, Double_t y, int nsamples){
                digit->setDetID(819);
                digit->setPadID(i);
                digit->setADC(charge[i]);
-
-            cout << "Digit padid " << digit->getPadID() << " et ADC " << digit->getADC() << endl;
+            if(gPrintLevel > 1){
+                cout << "Digit padid " << digit->getPadID() << " et ADC " << digit->getADC() << endl;
+            }
         }
     }
     
-    
+    delete hb;
+    delete hnb;
 }
 
 
@@ -285,6 +293,7 @@ void Validation::InfoDE819b(){
     o2::mch::mapping::CathodeSegmentation catseg(detElemId, isbending);
 
     int nopads = catseg.nofPads();
+    int gPrintLevel = 0;
     
     double padposx;
     double padposy;
@@ -297,8 +306,9 @@ void Validation::InfoDE819b(){
     int valuesx = 0;
     int valuesy = 0;
     
-    
-    cout << "There are " << nopads << " pads on bending plane" << endl;
+    if(gPrintLevel > 1){
+        cout << "There are " << nopads << " pads on bending plane" << endl;
+    }
     
     for(int catPadindex = 0; catPadindex<nopads; catPadindex++){
         padposx = catseg.padPositionX(catPadindex);
@@ -329,10 +339,12 @@ void Validation::InfoDE819b(){
         
     }
     
-    cout << "Il doit y avoir " << valuesx << " valeurs dans le vecteur lowxsb"
-    << "et " << valuesy << " valeurs dans le vecteur lowysb" << endl;
-    cout << "Il y a " << lowxsb.size() << " valeurs dans le vecteur lowxsb"
-    << "et " << lowysb.size() << " valeurs dans le vecteur lowysb" << endl;
+    if(gPrintLevel > 1){
+        cout << "Il doit y avoir " << valuesx << " valeurs dans le vecteur lowxsb"
+        << "et " << valuesy << " valeurs dans le vecteur lowysb" << endl;
+        cout << "Il y a " << lowxsb.size() << " valeurs dans le vecteur lowxsb"
+        << "et " << lowysb.size() << " valeurs dans le vecteur lowysb" << endl;
+    }
     
     cout << "Rangement des bords de pads par ordre croissant ..." << endl;
     
@@ -349,16 +361,19 @@ void Validation::InfoDE819b(){
     [](double l, double r) { return std::abs(l - r) < 0.001; });
     lowysb.erase(lastyb, lowysb.end());
     
-    cout << "Il y a maintenant " << lowxsb.size() << " valeurs dans le vecteur lowxsb"
-    << " et " << lowysb.size() << " valeurs dans le vecteur lowysb" << endl;
-    
+    if(gPrintLevel > 1){
+        cout << "Il y a maintenant " << lowxsb.size() << " valeurs dans le vecteur lowxsb"
+        << " et " << lowysb.size() << " valeurs dans le vecteur lowysb" << endl;
+    }
     
     cout << "Ajout de la borne sup" << endl;
     lowxsb.push_back(2*lowxsb[lowxsb.size()-1]-lowxsb[lowxsb.size()-2]);
     lowysb.push_back(2*lowysb[lowysb.size()-1]-lowysb[lowysb.size()-2]);
     
-    cout << "xlowsb:" << lowxsb[0] << "," << lowxsb[1] << "..." << lowxsb[valuesx-1] << "," << lowxsb[valuesx] << endl;
-    cout << "ylowsb:" << lowysb[0] << "," << lowysb[1] << "..." << lowysb[valuesy-1] << "," << lowysb[valuesy] << endl;
+    if(gPrintLevel > 1){
+        cout << "xlowsb:" << lowxsb[0] << "," << lowxsb[1] << "..." << lowxsb[valuesx-1] << "," << lowxsb[valuesx] << endl;
+        cout << "ylowsb:" << lowysb[0] << "," << lowysb[1] << "..." << lowysb[valuesy-1] << "," << lowysb[valuesy] << endl;
+    }
     
 //    for(int i=0; i<lowxsb.size(); i++){
 //        cout << lowxsb[i] << endl;
@@ -378,6 +393,7 @@ void Validation::InfoDE819nb(){
     o2::mch::mapping::CathodeSegmentation catseg(detElemId, isbending);
 
     int nopads = catseg.nofPads();
+    int gPrintLevel = 0;
     
     double padposx;
     double padposy;
@@ -390,8 +406,9 @@ void Validation::InfoDE819nb(){
     int valuesx = 0;
     int valuesy = 0;
     
-    
-    cout << "There are " << nopads << " pads on non-bending plane" << endl;
+    if(gPrintLevel > 1){
+        cout << "There are " << nopads << " pads on non-bending plane" << endl;
+    }
     
     for(int catPadindex = 0; catPadindex<nopads; catPadindex++){
         padposx = catseg.padPositionX(catPadindex);
@@ -422,10 +439,12 @@ void Validation::InfoDE819nb(){
         
     }
     
-    cout << "Il doit y avoir " << valuesx << " valeurs dans le vecteur lowxsnb"
-    << "et " << valuesy << " valeurs dans le vecteur lowysnb" << endl;
-    cout << "Il y a " << lowxsnb.size() << " valeurs dans le vecteur lowxsnb"
-    << "et " << lowysnb.size() << " valeurs dans le vecteur lowysnb" << endl;
+    if(gPrintLevel > 1){
+        cout << "Il doit y avoir " << valuesx << " valeurs dans le vecteur lowxsnb"
+        << "et " << valuesy << " valeurs dans le vecteur lowysnb" << endl;
+        cout << "Il y a " << lowxsnb.size() << " valeurs dans le vecteur lowxsnb"
+        << "et " << lowysnb.size() << " valeurs dans le vecteur lowysnb" << endl;
+    }
     
     cout << "Rangement des bords de pads par ordre croissant ..." << endl;
     
@@ -442,9 +461,10 @@ void Validation::InfoDE819nb(){
     [](double l, double r) { return std::abs(l - r) < 0.001; });
     lowysnb.erase(lastynb, lowysnb.end());
     
-    
-    cout << "Il y a maintenant " << lowxsnb.size() << " valeurs dans le vecteur lowxsnb"
-    << " et " << lowysnb.size() << " valeurs dans le vecteur lowysnb" << endl;
+    if(gPrintLevel > 1){
+        cout << "Il y a maintenant " << lowxsnb.size() << " valeurs dans le vecteur lowxsnb"
+        << " et " << lowysnb.size() << " valeurs dans le vecteur lowysnb" << endl;
+    }
     
     cout << "Ajout de la borne sup" << endl;
     lowxsnb.push_back(2*lowxsnb[lowxsnb.size()-1]-lowxsnb[lowxsnb.size()-2]);
@@ -517,7 +537,7 @@ std::vector<Clustering::Cluster> Validation::TestClustering(){
     
     
     //To run Mathieson fit Clustering
-       clustering.runFinderSimpleFit(preClusters, clusters);
+ //      clustering.runFinderSimpleFit(preClusters, clusters);
           
     
     //To run Gaussian fit Clustering
@@ -525,7 +545,7 @@ std::vector<Clustering::Cluster> Validation::TestClustering(){
     
     
     //To run Double Gaussian fit Clustering
-  //  clustering.runFinderDoubleGaussianFit(preClusters, clusters);
+    clustering.runFinderDoubleGaussianFit(preClusters, clusters);
     
     delete digitsBuffer;
     delete preClustersBuffer;
