@@ -32,4 +32,11 @@ bool Digit::operator==(const Digit& other) const
          closeEnough(mTime, other.mTime);
 }
 
+
+//_________________________________________________________________
+std::ostream& operator<<(std::ostream& stream, const Digit& digit)
+{
+  return stream;
+}
+
 } // namespace o2::mch

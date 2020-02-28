@@ -35,10 +35,13 @@ class Digit
 
   bool operator==(const Digit&) const;
 
+  void setTimeStamp(double t) { mTime = t; }
   double getTimeStamp() const { return mTime; }
 
+  void setDetID(int i) { mDetID = i; }
   int getDetID() const { return mDetID; }
 
+  void setPadID(int i) { mPadID = i; }
   int getPadID() const { return mPadID; }
 
   unsigned long getADC() const { return mADC; }
@@ -52,6 +55,11 @@ class Digit
 
   ClassDefNV(Digit, 1);
 }; //class Digit
+
+
+/// stream operator for printout
+std::ostream& operator<<(std::ostream& stream, const Digit& digit);
+
 
 } //namespace mch
 } //namespace o2
