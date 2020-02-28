@@ -1,5 +1,8 @@
+<!-- doxy
 \page refFrameworkCore Core
 \subpage refFrameworkCoreCOOKBOOK Core COOKBOOK
+\subpage refFrameworkCoreANALYSIS Core ANALYSIS
+/doxy -->
 
 # Data Processing Layer in O2 Framework
 
@@ -370,8 +373,9 @@ A service that data processors can register callback functions invoked by the fr
 
 Moreover in case you want to process events which are not coming from `FairMQ`, there is a `CallbackService::Id::ClockTick` which is called according to the rate specified for the backing FairMQ device.
 
-Similarly the `CallbackService::Id::Idle` callback is fired whenever there
-was nothing to process.
+Similarly the `CallbackService::Id::Idle` callback is fired whenever there was nothing to process.
+
+One last callback is `CallbackService::Id::EndOfStream`. This callback will be invoked whenever all the upstream DataProcessingDevice consider that they will not produce any more data, so we can finalize our results and exit.
 
 ## Expressing parallelism
 

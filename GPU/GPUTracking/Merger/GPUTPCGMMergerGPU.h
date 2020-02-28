@@ -24,17 +24,46 @@ namespace gpu
 class GPUTPCGMMergerTrackFit : public GPUKernelTemplate
 {
  public:
-  GPUhdi() static GPUDataTypes::RecoStep GetRecoStep() { return GPUDataTypes::RecoStep::TPCMerging; }
+  GPUhdi() CONSTEXPR static GPUDataTypes::RecoStep GetRecoStep() { return GPUDataTypes::RecoStep::TPCMerging; }
 #if !defined(GPUCA_ALIROOT_LIB) || !defined(GPUCA_GPUCODE)
   typedef GPUTPCGMMerger processorType;
   GPUhdi() static processorType* Processor(GPUConstantMem& processors)
   {
     return &processors.tpcMerger;
   }
-  template <int iKernel = 0>
-  GPUd() static void Thread(int nBlocks, int nThreads, int iBlock, int iThread, GPUsharedref() GPUTPCSharedMemory& smem, processorType& merger);
+  template <int iKernel = defaultKernel>
+  GPUd() static void Thread(int nBlocks, int nThreads, int iBlock, int iThread, GPUsharedref() GPUSharedMemory& smem, processorType& merger);
 #endif
 };
+
+class GPUTPCGMMergerUnpack
+{
+};
+class GPUTPCGMMergerMergeWithin
+{
+};
+class GPUTPCGMMergerMergeSlices
+{
+};
+class GPUTPCGMMergerMergeCE
+{
+};
+class GPUTPCGMMergerCollect
+{
+};
+class GPUTPCGMMergerClusters
+{
+};
+class GPUTPCGMMergerCopyToGPU
+{
+};
+class GPUTPCGMMergerCopyToHost
+{
+};
+class GPUTPCGMMergerFinalize
+{
+};
+
 } // namespace gpu
 } // namespace GPUCA_NAMESPACE
 

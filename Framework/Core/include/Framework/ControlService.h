@@ -13,6 +13,8 @@
 namespace o2::framework
 {
 
+enum struct StreamingState : int;
+
 /// Kind of request we want to issue to control
 enum struct QuitRequest {
   /// Only quit this data processor
@@ -31,6 +33,10 @@ class ControlService
   /// Signal control that we are potentially ready to quit some / all
   /// dataprocessor.
   virtual void readyToQuit(QuitRequest kind) = 0;
+  /// Signal that we are done with the current stream
+  virtual void endOfStream() = 0;
+  /// Report the current streaming state of a given device
+  virtual void notifyStreamingState(StreamingState state) = 0;
 };
 
 } // namespace o2::framework

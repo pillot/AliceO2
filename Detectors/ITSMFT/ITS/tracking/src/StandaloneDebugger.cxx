@@ -19,6 +19,7 @@
 #include "CommonUtils/TreeStreamRedirector.h"
 #include "ITStracking/ROframe.h"
 #include "ITStracking/StandaloneDebugger.h"
+#include "TH1I.h"
 
 namespace o2
 {
@@ -36,41 +37,47 @@ StandaloneDebugger::~StandaloneDebugger()
   delete mTreeStream;
 }
 
-void StandaloneDebugger::fillCombinatoricsTree(std::vector<Tracklet> comb01, std::vector<Tracklet> comb12)
+void StandaloneDebugger::fillCombinatoricsTree(std::array<std::vector<Cluster>, constants::its::LayersNumberVertexer>& clusters,
+                                               std::vector<Tracklet> comb01,
+                                               std::vector<Tracklet> comb12,
+                                               const ROframe* event)
 {
+  assert(event != nullptr);
+  assert(mTreeStream != nullptr);
+
   for (auto& combination : comb01) {
+    o2::MCCompLabel lblClus0 = event->getClusterLabels(0, clusters[0][combination.firstClusterIndex].clusterId);
+    o2::MCCompLabel lblClus1 = event->getClusterLabels(1, clusters[1][combination.secondClusterIndex].clusterId);
+    float c0z{clusters[0][combination.firstClusterIndex].zCoordinate};
+    float c1z{clusters[1][combination.secondClusterIndex].zCoordinate};
+    unsigned char isValidated{lblClus0.compare(lblClus1) == 1};
     (*mTreeStream)
       << "combinatorics01"
       << "tanLambda=" << combination.tanLambda
       << "phi=" << combination.phiCoordinate
+      << "c0z=" << c0z
+      << "c1z=" << c1z
+      << "isValidated=" << isValidated
+      << "lblClus0=" << lblClus0
+      << "lblClus1=" << lblClus1
       << "\n";
   }
 
   for (auto& combination : comb12) {
+    o2::MCCompLabel lblClus1 = event->getClusterLabels(1, clusters[1][combination.secondClusterIndex].clusterId);
+    o2::MCCompLabel lblClus2 = event->getClusterLabels(2, clusters[2][combination.secondClusterIndex].clusterId);
+    float c1z{clusters[1][combination.firstClusterIndex].zCoordinate};
+    float c2z{clusters[2][combination.secondClusterIndex].zCoordinate};
+    unsigned char isValidated{lblClus1.compare(lblClus2) == 1};
     (*mTreeStream)
       << "combinatorics12"
       << "tanLambda=" << combination.tanLambda
       << "phi=" << combination.phiCoordinate
-      << "\n";
-  }
-}
-
-void StandaloneDebugger::fillCombinatoricsMCTree(std::vector<Tracklet> comb01, std::vector<Tracklet> comb12)
-{
-  mTreeStream->GetDirectory()->cd(); // in case of existing other open files
-  for (auto& combination : comb01) {
-    (*mTreeStream)
-      << "combinatorics01_MC"
-      << "tanLambda=" << combination.tanLambda
-      << "phi=" << combination.phiCoordinate
-      << "\n";
-  }
-
-  for (auto& combination : comb12) {
-    (*mTreeStream)
-      << "combinatorics12_MC"
-      << "tanLambda=" << combination.tanLambda
-      << "phi=" << combination.phiCoordinate
+      << "c1z=" << c1z
+      << "c2z=" << c2z
+      << "isValidated=" << isValidated
+      << "lblClus1=" << lblClus1
+      << "lblClus2=" << lblClus2
       << "\n";
   }
 }
@@ -82,14 +89,15 @@ void StandaloneDebugger::fillTrackletSelectionTree(std::array<std::vector<Cluste
                                                    const ROframe* event)
 {
   assert(event != nullptr);
+  assert(mTreeStream != nullptr);
   int id = event->getROFrameId();
   for (auto& trackletPair : allowedTracklets) {
     o2::MCCompLabel lblClus0 = event->getClusterLabels(0, clusters[0][comb01[trackletPair[0]].firstClusterIndex].clusterId);
     o2::MCCompLabel lblClus1 = event->getClusterLabels(1, clusters[1][comb01[trackletPair[0]].secondClusterIndex].clusterId);
     o2::MCCompLabel lblClus2 = event->getClusterLabels(2, clusters[2][comb12[trackletPair[1]].secondClusterIndex].clusterId);
-    unsigned char isValidated{(lblClus0.compare(lblClus1) == 1 && lblClus0.compare(lblClus2) == 1)};
-    float deltaPhi{gpu::GPUCommonMath::Abs(comb01[trackletPair[0]].phiCoordinate - comb12[trackletPair[1]].phiCoordinate)};
-    float deltaTanLambda{gpu::GPUCommonMath::Abs(comb01[trackletPair[0]].tanLambda - comb12[trackletPair[1]].tanLambda)};
+    unsigned char isValidated{lblClus0.compare(lblClus1) == 1 && lblClus0.compare(lblClus2) == 1};
+    float deltaPhi{comb01[trackletPair[0]].phiCoordinate - comb12[trackletPair[1]].phiCoordinate};
+    float deltaTanLambda{comb01[trackletPair[0]].tanLambda - comb12[trackletPair[1]].tanLambda};
     mTreeStream->GetDirectory()->cd(); // in case of existing other open files
     (*mTreeStream)
       << "selectedTracklets"
@@ -99,53 +107,16 @@ void StandaloneDebugger::fillTrackletSelectionTree(std::array<std::vector<Cluste
       << "isValidated=" << isValidated
       << "cluster0z=" << clusters[0][comb01[trackletPair[0]].firstClusterIndex].zCoordinate
       << "cluster0r=" << clusters[0][comb01[trackletPair[0]].firstClusterIndex].rCoordinate
+      << "cluster0phi=" << clusters[0][comb01[trackletPair[0]].firstClusterIndex].phiCoordinate
       << "cluster1z=" << clusters[1][comb01[trackletPair[0]].secondClusterIndex].zCoordinate
       << "cluster1r=" << clusters[1][comb01[trackletPair[0]].secondClusterIndex].rCoordinate
+      << "cluster1phi=" << clusters[1][comb01[trackletPair[0]].secondClusterIndex].phiCoordinate
       << "cluster2z=" << clusters[2][comb12[trackletPair[1]].secondClusterIndex].zCoordinate
       << "cluster2r=" << clusters[2][comb12[trackletPair[1]].secondClusterIndex].rCoordinate
       << "lblClus0=" << lblClus0
       << "lblClus1=" << lblClus1
       << "lblClus2=" << lblClus2
       << "\n";
-  }
-}
-
-void StandaloneDebugger::fillStridedTrackletSelectionTree(std::array<std::vector<Cluster>, constants::its::LayersNumberVertexer>& clusters,
-                                                          std::vector<Tracklet> comb01,
-                                                          std::vector<Tracklet> comb12,
-                                                          std::vector<std::array<int, 2>> allowedTracklets,
-                                                          std::vector<int> nFoundSelections,
-                                                          const int stride,
-                                                          const ROframe* event)
-{
-  assert(event != nullptr);
-  int id = event->getROFrameId();
-  for (int iClusterIndex{0}; iClusterIndex < clusters[1].size(); ++iClusterIndex) {
-    const int stridedIndex{iClusterIndex * stride};
-    for (int iTrackletPair{0}; iTrackletPair < nFoundSelections[iClusterIndex]; ++iTrackletPair) {
-      auto& trackletPair = allowedTracklets[stridedIndex + iTrackletPair];
-      o2::MCCompLabel lblClus0 = event->getClusterLabels(0, clusters[0][comb01[trackletPair[0]].firstClusterIndex].clusterId);
-      o2::MCCompLabel lblClus1 = event->getClusterLabels(1, clusters[1][comb01[trackletPair[0]].secondClusterIndex].clusterId);
-      o2::MCCompLabel lblClus2 = event->getClusterLabels(2, clusters[2][comb12[trackletPair[1]].secondClusterIndex].clusterId);
-      unsigned char isValidated{(lblClus0.compare(lblClus1) == 1 && lblClus0.compare(lblClus2) == 1)};
-      float deltaTanLambda{gpu::GPUCommonMath::Abs(comb01[trackletPair[0]].tanLambda - comb12[trackletPair[1]].tanLambda)};
-      mTreeStream->GetDirectory()->cd(); // in case of existing other open files
-      (*mTreeStream)
-        << "selectedTracklets"
-        << "ROframeId=" << id
-        << "deltaTanlambda=" << deltaTanLambda
-        << "isValidated=" << isValidated
-        << "cluster0z=" << clusters[0][comb01[trackletPair[0]].firstClusterIndex].zCoordinate
-        << "cluster0r=" << clusters[0][comb01[trackletPair[0]].firstClusterIndex].rCoordinate
-        << "cluster1z=" << clusters[1][comb01[trackletPair[0]].secondClusterIndex].zCoordinate
-        << "cluster1r=" << clusters[1][comb01[trackletPair[0]].secondClusterIndex].rCoordinate
-        << "cluster2z=" << clusters[2][comb12[trackletPair[1]].secondClusterIndex].zCoordinate
-        << "cluster2r=" << clusters[2][comb12[trackletPair[1]].secondClusterIndex].rCoordinate
-        << "lblClus0=" << lblClus0
-        << "lblClus1=" << lblClus1
-        << "lblClus2=" << lblClus2
-        << "\n";
-    }
   }
 }
 
@@ -197,6 +168,34 @@ void StandaloneDebugger::fillPairsInfoTree(std::vector<Line> lines, const ROfram
     // TODO: get primary vertex montecarlo position
     // mLinesData.push_back(Line::getDCAComponents(line1, std::array<float, 3>{0., 0., 0.}));
   }
+}
+
+// void StandaloneDebugger::fillXYCentroidsTree(std::array<std::vector<float>, 2> centroidsXY, std::array<int, 2> sizes)
+// {
+//   TH1F("cenbtroidsX", ";x (cm); Number of centroids", sizes[0], -1.98f, 1.98f);
+// }
+
+void StandaloneDebugger::fillXYZHistogramTree(std::array<std::vector<int>, 3> arrayHistos, const std::array<int, 3> sizes)
+{
+  TH1I histoX{"histoX", ";x (cm); Number of centroids", sizes[0], -1.98f, 1.98f};
+  for (int iBin{1}; iBin < sizes[0] + 1; ++iBin) {
+    histoX.SetBinContent(iBin, arrayHistos[0][iBin - 1]);
+  }
+  TH1I histoY{"histoY", ";y (cm); Number of centroids", sizes[1], -1.98f, 1.98f};
+  for (int iBin{1}; iBin < sizes[1] + 1; ++iBin) {
+    histoY.SetBinContent(iBin, arrayHistos[1][iBin - 1]);
+  }
+  TH1I histoZ{"histoZ", ";z (cm); Number of centroids", sizes[2], -40., 40.};
+  for (int iBin{1}; iBin < sizes[2] + 1; ++iBin) {
+    histoZ.SetBinContent(iBin, arrayHistos[2][iBin - 1]);
+  }
+
+  (*mTreeStream)
+    << "HistXYZ"
+    << "histX=" << histoX
+    << "histY=" << histoY
+    << "histZ=" << histoZ
+    << "\n";
 }
 
 } // namespace its

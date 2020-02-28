@@ -719,8 +719,7 @@ void AliTPCSpaceCharge3DCalc::InitSpaceCharge3DPoissonIntegralDz(
       //(fPoissonSolver->fMgParameters).maxLoop = 6;
 
       w.Start();
-      fPoissonSolver->PoissonSolver3D(matricesV, matricesCharge, nRRow, nZColumn, phiSlice, maxIteration,
-                                      symmetry);
+      fPoissonSolver->PoissonSolver3D(matricesV, matricesCharge, nRRow, nZColumn, phiSlice, maxIteration, symmetry);
       w.Stop();
 
       potentialInterpolator->SetValue(matricesV);
@@ -1729,8 +1728,7 @@ void AliTPCSpaceCharge3DCalc::InitSpaceCharge3DPoisson(Int_t nRRow, Int_t nZColu
           fInterpolationOrder);
 
       Info("AliTPCSpaceCharge3DCalc::InitSpaceCharge3DPoissonIntegralDz", "Step 1: Solving poisson solver");
-      fPoissonSolver->PoissonSolver3D(matricesV, matricesCharge, nRRow, nZColumn, phiSlice, maxIteration,
-                                      symmetry);
+      fPoissonSolver->PoissonSolver3D(matricesV, matricesCharge, nRRow, nZColumn, phiSlice, maxIteration, symmetry);
       Info("AliTPCSpaceCharge3DCalc::InitSpaceCharge3DPoissonIntegralDz", "Step 2: Calculate electric field");
       CalculateEField(
         matricesV,
@@ -2119,10 +2117,8 @@ void AliTPCSpaceCharge3DCalc::LocalDistCorrDz(TMatrixD** matricesEr, TMatrixD** 
 
     for (Int_t j = 0; j < nZColumn - 1; j++) {
       for (Int_t i = 0; i < nRRow; i++) {
-        // localIntErOverEz = (gridSizeZ * 0.5) * ((*eR)(i, j) + (*eR)(i, j + 1)) / (ezField + (*eZ)(i, j));
-        // localIntEPhiOverEz = (gridSizeZ * 0.5) * ((*ePhi)(i, j) + (*ePhi)(i, j + 1)) / (ezField + (*eZ)(i, j));
-        localIntErOverEz = (gridSizeZ * 0.5) * ((*eR)(i, j) + (*eR)(i, j + 1)) / (ezField);
-        localIntEPhiOverEz = (gridSizeZ * 0.5) * ((*ePhi)(i, j) + (*ePhi)(i, j + 1)) / (ezField);
+        localIntErOverEz = (gridSizeZ * 0.5) * ((*eR)(i, j) + (*eR)(i, j + 1)) / (ezField + (*eZ)(i, j));
+        localIntEPhiOverEz = (gridSizeZ * 0.5) * ((*ePhi)(i, j) + (*ePhi)(i, j + 1)) / (ezField + (*eZ)(i, j));
         localIntDeltaEz = (gridSizeZ * 0.5) * ((*eZ)(i, j) + (*eZ)(i, j + 1));
 
         (*distDrDz)(i, j) = fC0 * localIntErOverEz + fC1 * localIntEPhiOverEz;
@@ -5125,4 +5121,25 @@ void AliTPCSpaceCharge3DCalc::SetInterpolationOrder(Int_t order)
   fLookupIntCorrIrregularA->SetOrder(fInterpolationOrder);
 
   fLookupIntCorrIrregularC->SetOrder(fInterpolationOrder);
+}
+
+void AliTPCSpaceCharge3DCalc::SetDistortionLookupTables(TMatrixD** matrixIntDistDrA, TMatrixD** matrixIntDistDrphiA, TMatrixD** matrixIntDistDzA, TMatrixD** matrixIntDistDrC, TMatrixD** matrixIntDistDrphiC, TMatrixD** matrixIntDistDzC)
+{
+  fMatrixIntDistDrEzA = matrixIntDistDrA;
+  fMatrixIntDistDPhiREzA = matrixIntDistDrphiA;
+  fMatrixIntDistDzA = matrixIntDistDzA;
+  fLookupIntDistA->SetLookUpR(fMatrixIntDistDrEzA);
+  fLookupIntDistA->SetLookUpPhi(fMatrixIntDistDPhiREzA);
+  fLookupIntDistA->SetLookUpZ(fMatrixIntDistDzA);
+  fLookupIntDistA->CopyFromMatricesToInterpolator();
+
+  fMatrixIntDistDrEzC = matrixIntDistDrC;
+  fMatrixIntDistDPhiREzC = matrixIntDistDrphiC;
+  fMatrixIntDistDzC = matrixIntDistDzC;
+  fLookupIntDistC->SetLookUpR(fMatrixIntDistDrEzC);
+  fLookupIntDistC->SetLookUpPhi(fMatrixIntDistDPhiREzC);
+  fLookupIntDistC->SetLookUpZ(fMatrixIntDistDzC);
+  fLookupIntDistC->CopyFromMatricesToInterpolator();
+
+  fInitLookUp = kTRUE;
 }

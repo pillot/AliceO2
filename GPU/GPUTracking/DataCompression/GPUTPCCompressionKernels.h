@@ -31,19 +31,19 @@ namespace gpu
 class GPUTPCCompressionKernels : public GPUKernelTemplate
 {
  public:
-  GPUhdi() static GPUDataTypes::RecoStep GetRecoStep() { return GPUDataTypes::RecoStep::TPCCompression; }
+  GPUhdi() CONSTEXPR static GPUDataTypes::RecoStep GetRecoStep() { return GPUDataTypes::RecoStep::TPCCompression; }
 
-  struct GPUTPCSharedMemory {
-#if !defined(GPUCA_GPUCODE)
-    GPUTPCSharedMemory() : nCount(0)
-    {
-    }
-#endif
+  enum K : int {
+    step0attached = 0,
+    step1unattached = 1
+  };
+
+  struct GPUSharedMemory {
     GPUAtomic(unsigned int) nCount;
   };
 
-  template <int iKernel = 0>
-  GPUd() static void Thread(int nBlocks, int nThreads, int iBlock, int iThread, GPUsharedref() GPUTPCSharedMemory& smem, processorType& processors);
+  template <int iKernel = defaultKernel>
+  GPUd() static void Thread(int nBlocks, int nThreads, int iBlock, int iThread, GPUsharedref() GPUSharedMemory& smem, processorType& processors);
 
  public:
   template <int I>

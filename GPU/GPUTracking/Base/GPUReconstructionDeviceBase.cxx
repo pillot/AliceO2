@@ -32,8 +32,11 @@ class GPUTPCRow;
 
 #define SemLockName "AliceHLTTPCGPUTrackerInitLockSem"
 
-GPUReconstructionDeviceBase::GPUReconstructionDeviceBase(const GPUSettingsProcessing& cfg) : GPUReconstructionCPU(cfg)
+GPUReconstructionDeviceBase::GPUReconstructionDeviceBase(const GPUSettingsProcessing& cfg, size_t sizeCheck) : GPUReconstructionCPU(cfg)
 {
+  if (sizeCheck != sizeof(GPUReconstructionDeviceBase)) {
+    GPUFatal("Mismatch of C++ object size between GPU compilers!");
+  }
 }
 
 GPUReconstructionDeviceBase::~GPUReconstructionDeviceBase()
@@ -296,4 +299,14 @@ int GPUReconstructionDeviceBase::GetMaxThreads()
 {
   int retVal = mTRDThreadCount * mBlockCount;
   return std::max(retVal, GPUReconstruction::GetMaxThreads());
+}
+
+int GPUReconstructionDeviceBase::registerMemoryForGPU(void* ptr, size_t size)
+{
+  return IsGPU();
+}
+
+int GPUReconstructionDeviceBase::unregisterMemoryForGPU(void* ptr)
+{
+  return IsGPU();
 }

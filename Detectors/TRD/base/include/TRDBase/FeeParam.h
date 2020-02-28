@@ -51,24 +51,24 @@ class FeeParam
   static void terminate();
 
   // Translation from MCM to Pad and vice versa
-  virtual int getPadRowFromMCM(Int_t irob, Int_t imcm) const;
-  virtual int getPadColFromADC(Int_t irob, Int_t imcm, Int_t iadc) const;
-  virtual int getExtendedPadColFromADC(Int_t irob, Int_t imcm, Int_t iadc) const;
-  virtual int getMCMfromPad(Int_t irow, Int_t icol) const;
-  virtual int getMCMfromSharedPad(Int_t irow, Int_t icol) const;
-  virtual int getROBfromPad(Int_t irow, Int_t icol) const;
-  virtual int getROBfromSharedPad(Int_t irow, Int_t icol) const;
-  virtual int getRobSide(Int_t irob) const;
-  virtual int getColSide(Int_t icol) const;
+  virtual int getPadRowFromMCM(int irob, int imcm) const;
+  virtual int getPadColFromADC(int irob, int imcm, int iadc) const;
+  virtual int getExtendedPadColFromADC(int irob, int imcm, int iadc) const;
+  virtual int getMCMfromPad(int irow, int icol) const;
+  virtual int getMCMfromSharedPad(int irow, int icol) const;
+  virtual int getROBfromPad(int irow, int icol) const;
+  virtual int getROBfromSharedPad(int irow, int icol) const;
+  virtual int getRobSide(int irob) const;
+  virtual int getColSide(int icol) const;
 
   // SCSN-related
-  static unsigned int aliToExtAli(Int_t rob, Int_t aliid);                                               // Converts the MCM-ROB combination to the extended MCM ALICE ID (used to address MCMs on the SCSN Bus)
-  static int extAliToAli(UInt_t dest, UShort_t linkpair, UShort_t rocType, Int_t* list, Int_t listSize); // translates an extended MCM ALICE ID to a list of MCMs
-  static Short_t chipmaskToMCMlist(unsigned int cmA, UInt_t cmB, UShort_t linkpair, Int_t* mcmList, Int_t listSize);
-  static Short_t getRobAB(UShort_t robsel, UShort_t linkpair); // Returns the chamber side (A=0, B=0) of a ROB
+  static unsigned int aliToExtAli(int rob, int aliid);                                                                 // Converts the MCM-ROB combination to the extended MCM ALICE ID (used to address MCMs on the SCSN Bus)
+  static int extAliToAli(unsigned int dest, unsigned short linkpair, unsigned short rocType, int* list, int listSize); // translates an extended MCM ALICE ID to a list of MCMs
+  static short chipmaskToMCMlist(unsigned int cmA, unsigned int cmB, unsigned short linkpair, int* mcmList, int listSize);
+  static short getRobAB(unsigned short robsel, unsigned short linkpair); // Returns the chamber side (A=0, B=0) of a ROB
 
   // geometry
-  static Float_t getSamplingFrequency() { return (Float_t)mgkLHCfrequency / 4000000.0; } //TODO put the 40MHz into a static variable somewhere.
+  static float getSamplingFrequency() { return (float)mgkLHCfrequency / 4000000.0; } //TODO put the 40MHz into a static variable somewhere.
   static int getNmcmRob() { return mgkNmcmRob; }
   static int getNmcmRobInRow() { return mgkNmcmRobInRow; }
   static int getNmcmRobInCol() { return mgkNmcmRobInCol; }
@@ -79,6 +79,19 @@ class FeeParam
   static int getNcolMcm() { return mgkNcolMcm; }
   static int getNrowC0() { return mgkNrowC0; }
   static int getNrowC1() { return mgkNrowC1; }
+
+  // Basic Geometrical numbers these were private but as they are static and const it seems pointless.
+  static const int mgkLHCfrequency = 40079000; // [Hz] LHC clock
+  static const int mgkNmcmRob = 16;            // Number of MCMs per ROB
+  static const int mgkNmcmRobInRow = 4;        // Number of MCMs per ROB in row dir.
+  static const int mgkNmcmRobInCol = 4;        // Number of MCMs per ROB in col dir.
+  static const int mgkNrobC0 = 6;              // Number of ROBs per C0 chamber
+  static const int mgkNrobC1 = 8;              // Number of ROBs per C1 chamber
+  static const int mgkNadcMcm = 21;            // Number of ADC channels per MCM
+  static const int mgkNcol = 144;              // Number of pads per padplane row
+  static const int mgkNcolMcm = 18;            // Number of pads per MCM
+  static const int mgkNrowC0 = 12;             // Number of Rows per C0 chamber
+  static const int mgkNrowC1 = 16;             // Number of Rows per C1 chamber
 
   // tracklet simulation
   bool getTracklet() const { return mgTracklet; }
@@ -150,19 +163,6 @@ class FeeParam
   static bool mgLUTPadNumberingFilled;         // Lookup table mapping Pad to MCM
 
   void createPad2MCMLookUpTable();
-
-  // Basic Geometrical numbers
-  static const int mgkLHCfrequency = 40079000; // [Hz] LHC clock
-  static const int mgkNmcmRob = 16;            // Number of MCMs per ROB
-  static const int mgkNmcmRobInRow = 4;        // Number of MCMs per ROB in row dir.
-  static const int mgkNmcmRobInCol = 4;        // Number of MCMs per ROB in col dir.
-  static const int mgkNrobC0 = 6;              // Number of ROBs per C0 chamber
-  static const int mgkNrobC1 = 8;              // Number of ROBs per C1 chamber
-  static const int mgkNadcMcm = 21;            // Number of ADC channels per MCM
-  static const int mgkNcol = 144;              // Number of pads per padplane row
-  static const int mgkNcolMcm = 18;            // Number of pads per MCM
-  static const int mgkNrowC0 = 12;             // Number of Rows per C0 chamber
-  static const int mgkNrowC1 = 16;             // Number of Rows per C1 chamber
 
   // Tracklet  processing on/off
   static bool mgTracklet;                // tracklet processing

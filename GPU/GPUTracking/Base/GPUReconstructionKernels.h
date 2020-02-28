@@ -11,58 +11,39 @@
 /// \file GPUReconstructionKernels.h
 /// \author David Rohr
 
-#ifndef GPURECONSTRUCTIONKERNELS_H
-#define GPURECONSTRUCTIONKERNELS_H
+// No header protection, this may be used multiple times
+#include "GPUReconstructionKernelMacros.h"
 
-namespace GPUCA_NAMESPACE
-{
-namespace gpu
-{
-#ifdef GPUCA_GPURECONSTRUCTIONCPU_DECLONLY
-template <>
-class GPUReconstructionKernels<GPUReconstructionCPUBackend> : public GPUReconstructionCPUBackend
-#define GPUCA_KRNL(...) ;
-#define GPUCA_KRNL_CLASS GPUReconstructionCPUBackend
-#else
-template <class T>
-class GPUReconstructionKernels : public T
-#define GPUCA_EXPAND(...) __VA_ARGS__
-#define GPUCA_KRNL(X) GPUCA_EXPAND X
-#define GPUCA_KRNL_CLASS T
-#endif
-{
- public:
-  using krnlRunRange = GPUReconstruction::krnlRunRange;
-  using krnlExec = GPUReconstruction::krnlExec;
-  using krnlEvent = GPUReconstruction::krnlEvent;
-  template <class X, int Y = 0>
-  using classArgument = GPUReconstruction::classArgument<X, Y>;
-
-  virtual ~GPUReconstructionKernels() = default; // NOLINT: Do not declare override in template class! AMD hcc will not create the destructor otherwise.
-  GPUReconstructionKernels(const GPUSettingsProcessing& cfg) : GPUCA_KRNL_CLASS(cfg) {}
-
- protected:
-  virtual int runKernelImpl(classArgument<GPUTPCNeighboursFinder>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z) GPUCA_KRNL(({ return T::template runKernelBackend<GPUTPCNeighboursFinder>(x, y, z); }));                         // NOLINT
-  virtual int runKernelImpl(classArgument<GPUTPCNeighboursCleaner>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z) GPUCA_KRNL(({ return T::template runKernelBackend<GPUTPCNeighboursCleaner>(x, y, z); }));                       // NOLINT
-  virtual int runKernelImpl(classArgument<GPUTPCStartHitsFinder>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z) GPUCA_KRNL(({ return T::template runKernelBackend<GPUTPCStartHitsFinder>(x, y, z); }));                           // NOLINT
-  virtual int runKernelImpl(classArgument<GPUTPCStartHitsSorter>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z) GPUCA_KRNL(({ return T::template runKernelBackend<GPUTPCStartHitsSorter>(x, y, z); }));                           // NOLINT
-  virtual int runKernelImpl(classArgument<GPUTPCTrackletConstructor>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z) GPUCA_KRNL(({ return T::template runKernelBackend<GPUTPCTrackletConstructor>(x, y, z); }));                   // NOLINT
-  virtual int runKernelImpl(classArgument<GPUTPCTrackletConstructor, 1>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z) GPUCA_KRNL(({ return T::template runKernelBackend<GPUTPCTrackletConstructor, 1>(x, y, z); }));             // NOLINT
-  virtual int runKernelImpl(classArgument<GPUTPCTrackletSelector>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z) GPUCA_KRNL(({ return T::template runKernelBackend<GPUTPCTrackletSelector>(x, y, z); }));                         // NOLINT
-  virtual int runKernelImpl(classArgument<GPUMemClean16>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z, void* ptr, unsigned long size) GPUCA_KRNL(({ return T::template runKernelBackend<GPUMemClean16>(x, y, z, ptr, size); })); // NOLINT
-  virtual int runKernelImpl(classArgument<GPUTPCGMMergerTrackFit>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z) GPUCA_KRNL(({ return T::template runKernelBackend<GPUTPCGMMergerTrackFit>(x, y, z); }));                         // NOLINT
+// clang-format off
+GPUCA_KRNL((GPUTPCNeighboursFinder                       ), (single, REG, (GPUCA_THREAD_COUNT_FINDER, GPUCA_BLOCK_COUNT_CONSTRUCTOR_MULTIPLIER_FINDER)), (), ())
+GPUCA_KRNL((GPUTPCNeighboursCleaner                      ), (single, REG, (GPUCA_THREAD_COUNT, 1)), (), ())
+GPUCA_KRNL((GPUTPCStartHitsFinder                        ), (single, REG, (GPUCA_THREAD_COUNT, 1)), (), ())
+GPUCA_KRNL((GPUTPCStartHitsSorter                        ), (single, REG, (GPUCA_THREAD_COUNT, 1)), (), ())
+GPUCA_KRNL((GPUTPCTrackletConstructor, singleSlice       ), (single, REG, (GPUCA_THREAD_COUNT_CONSTRUCTOR, GPUCA_BLOCK_COUNT_CONSTRUCTOR_MULTIPLIER)), (), ())
+GPUCA_KRNL((GPUTPCTrackletConstructor, allSlices         ), (single, REG, (GPUCA_THREAD_COUNT_CONSTRUCTOR, GPUCA_BLOCK_COUNT_CONSTRUCTOR_MULTIPLIER)), (), ())
+GPUCA_KRNL((GPUTPCTrackletSelector                       ), (both, REG, (GPUCA_THREAD_COUNT_SELECTOR, GPUCA_BLOCK_COUNT_SELECTOR_MULTIPLIER)), (), ())
+GPUCA_KRNL((GPUMemClean16                                ), (simple, REG, (GPUCA_THREAD_COUNT, 1)), (, GPUPtr1(void*, ptr), unsigned long size), (, GPUPtr2(void*, ptr), size))
+#if !defined(GPUCA_OPENCL1) && (!defined(GPUCA_ALIROOT_LIB) || !defined(GPUCA_GPUCODE))
+GPUCA_KRNL((GPUTPCGMMergerTrackFit                       ), (simple, REG, (GPUCA_THREAD_COUNT_FIT, 1)), (), ())
 #ifdef HAVE_O2HEADERS
-  virtual int runKernelImpl(classArgument<GPUTRDTrackerGPU>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z) GPUCA_KRNL(({ return T::template runKernelBackend<GPUTRDTrackerGPU>(x, y, z); }));                                     // NOLINT
-  virtual int runKernelImpl(classArgument<GPUITSFitterKernel>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z) GPUCA_KRNL(({ return T::template runKernelBackend<GPUITSFitterKernel>(x, y, z); }));                                 // NOLINT
-  virtual int runKernelImpl(classArgument<GPUTPCConvertKernel>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z) GPUCA_KRNL(({ return T::template runKernelBackend<GPUTPCConvertKernel>(x, y, z); }));                               // NOLINT
-  virtual int runKernelImpl(classArgument<GPUTPCCompressionKernels, 0>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z) GPUCA_KRNL(({ return T::template runKernelBackend<GPUTPCCompressionKernels, 0>(x, y, z); }));               // NOLINT
-  virtual int runKernelImpl(classArgument<GPUTPCCompressionKernels, 1>, const krnlExec& x, const krnlRunRange& y, const krnlEvent& z) GPUCA_KRNL(({ return T::template runKernelBackend<GPUTPCCompressionKernels, 1>(x, y, z); }));               // NOLINT
+GPUCA_KRNL((GPUTRDTrackerGPU                             ), (simple, REG, (GPUCA_THREAD_COUNT_TRD, 1)), (), ())
+GPUCA_KRNL((GPUITSFitterKernel                           ), (simple, REG, (GPUCA_THREAD_COUNT_ITS, 1)), (), ())
+GPUCA_KRNL((GPUTPCConvertKernel                          ), (simple, REG, (GPUCA_THREAD_COUNT_CONVERTER, 1)), (), ())
+GPUCA_KRNL((GPUTPCCompressionKernels,   step0attached    ), (simple, REG, (GPUCA_THREAD_COUNT_COMPRESSION1, 1)), (), ())
+GPUCA_KRNL((GPUTPCCompressionKernels,   step1unattached  ), (simple, REG, (GPUCA_THREAD_COUNT_COMPRESSION2, 1)), (), ())
+GPUCA_KRNL((GPUTPCCFChargeMapFiller,    fillChargeMap    ), (single, REG, (GPUCA_THREAD_COUNT_CLUSTERER, 1)), (), ())
+GPUCA_KRNL((GPUTPCCFChargeMapFiller,    resetMaps        ), (single, REG, (GPUCA_THREAD_COUNT_CLUSTERER, 1)), (), ())
+GPUCA_KRNL((GPUTPCCFPeakFinder                           ), (single, REG, (GPUCA_THREAD_COUNT_CLUSTERER, 1)), (), ())
+GPUCA_KRNL((GPUTPCCFNoiseSuppression,   noiseSuppression ), (single, REG, (GPUCA_THREAD_COUNT_CLUSTERER, 1)), (), ())
+GPUCA_KRNL((GPUTPCCFNoiseSuppression,   updatePeaks      ), (single, REG, (GPUCA_THREAD_COUNT_CLUSTERER, 1)), (), ())
+GPUCA_KRNL((GPUTPCCFDeconvolution                        ), (single, REG, (GPUCA_THREAD_COUNT_CLUSTERER, 1)), (), ())
+GPUCA_KRNL((GPUTPCCFClusterizer                          ), (single, REG, (GPUCA_THREAD_COUNT_CLUSTERER, 1)), (), ())
+GPUCA_KRNL((GPUTPCCFStreamCompaction,   nativeScanUpStart), (single, REG, (GPUCA_THREAD_COUNT_SCAN, 1)), (, int iBuf, int stage), (, iBuf, stage))
+GPUCA_KRNL((GPUTPCCFStreamCompaction,   nativeScanUp     ), (single, REG, (GPUCA_THREAD_COUNT_SCAN, 1)), (, int iBuf, int nElems), (, iBuf, nElems))
+GPUCA_KRNL((GPUTPCCFStreamCompaction,   nativeScanTop    ), (single, REG, (GPUCA_THREAD_COUNT_SCAN, 1)), (, int iBuf, int nElems), (, iBuf, nElems))
+GPUCA_KRNL((GPUTPCCFStreamCompaction,   nativeScanDown   ), (single, REG, (GPUCA_THREAD_COUNT_SCAN, 1)), (, int iBuf, unsigned int offset, int nElems), (, iBuf, offset, nElems))
+GPUCA_KRNL((GPUTPCCFStreamCompaction,   compactDigit     ), (single, REG, (GPUCA_THREAD_COUNT_SCAN, 1)), (, int iBuf, int stage, GPUPtr1(deprecated::PackedDigit*, in), GPUPtr1(deprecated::PackedDigit*, out)), (, iBuf, stage, GPUPtr2(deprecated::PackedDigit*, in), GPUPtr2(deprecated::PackedDigit*, out)))
+GPUCA_KRNL((GPUTPCCFDecodeZS                             ), (single, REG, (GPUCA_THREAD_COUNT_CFDECODE, 1)), (), ())
 #endif
-};
-
-#undef GPUCA_KRNL
-#undef GPUCA_KRNL_CLASS
-} // namespace gpu
-} // namespace GPUCA_NAMESPACE
-
 #endif
+// clang-format on

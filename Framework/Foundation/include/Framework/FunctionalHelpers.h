@@ -7,14 +7,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef o2_framework_FunctionalHelpers_H_INCLUDED
-#define o2_framework_FunctionalHelpers_H_INCLUDED
+#ifndef O2_FRAMEWORK_FUNCTIONALHELPERS_H_
+#define O2_FRAMEWORK_FUNCTIONALHELPERS_H_
 
+#include "Framework/Pack.h"
 #include <functional>
 
-namespace o2
-{
-namespace framework
+namespace o2::framework
 {
 
 namespace
@@ -23,71 +22,7 @@ template <typename T>
 struct memfun_type {
   using type = void;
 };
-
-/// Type helper to hold a parameter pack.  This is different from a tuple
-/// as there is no data associated to it.
-template <typename...>
-struct pack {
-};
-
-/// template function to determine number of types in a pack
-template <typename... Ts>
-constexpr std::size_t pack_size(pack<Ts...>&& p)
-{
-  return sizeof...(Ts);
-}
-
-template <std::size_t I, typename T>
-struct pack_element;
-
-// recursive case
-template <std::size_t I, typename Head, typename... Tail>
-struct pack_element<I, pack<Head, Tail...>>
-  : pack_element<I - 1, pack<Tail...>> {
-};
-
-// base case
-template <typename Head, typename... Tail>
-struct pack_element<0, pack<Head, Tail...>> {
-  typedef Head type;
-};
-
-template <std::size_t I, typename T>
-using pack_element_t = typename pack_element<I, T>::type;
-
-/// Templates for manipulating type lists in pack
-/// (see https://codereview.stackexchange.com/questions/201209/filter-template-meta-function/201222#201222)
-/// Example of use:
-///     template<typename T>
-///         struct is_not_double: std::true_type{};
-///     template<>
-///         struct is_not_double<double>: std::false_type{};
-/// The following will return a pack, excluding double
-///  filtered_pack<is_not_double, double, int, char, float*, double, char*, double>()
-///
-template <typename... Args1, typename... Args2>
-constexpr auto concatenate_pack(pack<Args1...>, pack<Args2...>)
-{
-  return pack<Args1..., Args2...>{};
-}
-
-template <template <typename> typename Condition, typename Result>
-constexpr auto filter_pack(Result result, pack<>)
-{
-  return result;
-}
-
-template <template <typename> typename Condition, typename Result, typename T, typename... Ts>
-constexpr auto filter_pack(Result result, pack<T, Ts...>)
-{
-  if constexpr (Condition<T>())
-    return filter_pack<Condition>(concatenate_pack(result, pack<T>{}), pack<Ts...>{});
-  else
-    return filter_pack<Condition>(result, pack<Ts...>{});
-}
-
-template <template <typename> typename Condition, typename... Types>
-using filtered_pack = std::decay_t<decltype(filter_pack<Condition>(pack<>{}, pack<Types...>{}))>;
+} // namespace
 
 /// Type helper to hold metadata about a lambda or a class
 /// method.
@@ -97,7 +32,6 @@ struct memfun_type<Ret (Class::*)(Args...) const> {
   using args = pack<Args...>;
   using return_type = Ret;
 };
-} // namespace
 
 /// Funtion From Lambda. Helper to create an std::function from a
 /// lambda and therefore being able to use the std::function type
@@ -120,7 +54,6 @@ memfun_type<decltype(&F::operator())>
   return memfun_type<decltype(&F::operator())>();
 }
 
-} // namespace framework
-} // namespace o2
+} // namespace o2::framework
 
-#endif // o2_framework_FunctionalHelpers_H_INCLUDED
+#endif // O2_FRAMEWORK_FUNCTIONALHELPERS_H_

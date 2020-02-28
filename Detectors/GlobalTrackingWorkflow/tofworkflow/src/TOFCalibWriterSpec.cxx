@@ -11,6 +11,7 @@
 /// @file   TOFCalibWriterSpec.cxx
 
 #include "TOFWorkflow/TOFCalibWriterSpec.h"
+#include "Framework/ConfigParamRegistry.h"
 #include "Framework/ControlService.h"
 #include "Headers/DataHeader.h"
 #include <SimulationDataFormat/MCCompLabel.h>
@@ -75,7 +76,7 @@ void TOFCalibWriter::run(ProcessingContext& pc)
 DataProcessorSpec getTOFCalibWriterSpec()
 {
   std::vector<InputSpec> inputs;
-  inputs.emplace_back("tofcalibinfo", "TOF", "CALIBINFOS", 0, Lifetime::Timeframe);
+  inputs.emplace_back("tofcalibinfo", o2::header::gDataOriginTOF, "CALIBINFOS", 0, Lifetime::Timeframe);
 
   return DataProcessorSpec{
     "TOFCalibWriter",

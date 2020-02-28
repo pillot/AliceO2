@@ -12,6 +12,7 @@
 
 #include "TOFWorkflow/TOFClusterWriterSpec.h"
 #include "Framework/ControlService.h"
+#include "Framework/ConfigParamRegistry.h"
 #include <SimulationDataFormat/MCCompLabel.h>
 #include <SimulationDataFormat/MCTruthContainer.h>
 #include "TTree.h"
@@ -79,9 +80,9 @@ void ClusterWriter::run(ProcessingContext& pc)
 DataProcessorSpec getTOFClusterWriterSpec(bool useMC)
 {
   std::vector<InputSpec> inputs;
-  inputs.emplace_back("tofclusters", "TOF", "CLUSTERS", 0, Lifetime::Timeframe);
+  inputs.emplace_back("tofclusters", o2::header::gDataOriginTOF, "CLUSTERS", 0, Lifetime::Timeframe);
   if (useMC)
-    inputs.emplace_back("tofclusterlabels", "TOF", "CLUSTERSMCTR", 0, Lifetime::Timeframe);
+    inputs.emplace_back("tofclusterlabels", o2::header::gDataOriginTOF, "CLUSTERSMCTR", 0, Lifetime::Timeframe);
 
   return DataProcessorSpec{
     "TOFClusterWriter",
