@@ -131,9 +131,10 @@ std::map<std::string, Stat> bufferdump(std::string input, DumpOptions opt)
     std::cout << "It contained " << sc.nofSamples() << " samples." << std::endl;
     int deId = opt.deId();
     std::cout << "We are looking at DE " << deId << std::endl;
-    o2::mch::mapping::Segmentation segment(detId);
-    int padId = segment.findPadByFEE(dsId, channel);
-    std::cout << "For this digit we obtained a padId of " << padId << std::endl;
+    o2::mch::mapping::Segmentation segment(deId);
+    // Need a conversion Elec2Det for dsId
+    //int padId = segment.findPadByFEE(dsId, channel);
+   // std::cout << "For this digit we obtained a padId of " << padId << std::endl;
     ++ndigits;
   };
 
