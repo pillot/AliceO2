@@ -116,7 +116,7 @@ std::map<std::string, Stat> bufferdump(std::string input, DumpOptions opt)
   std::map<std::string, Stat> statChannel;
 
   memset(&buffer[0], 0, buffer.size());
-  auto channelHandler = [&ndigits, &uniqueDS, &uniqueChannel, &statChannel](DsElecId dsId,
+  auto channelHandler = [&ndigits, &uniqueDS, &uniqueChannel, &statChannel, &opt](DsElecId dsId,
                                                                             uint8_t channel, o2::mch::raw::SampaCluster sc) {
     auto s = asString(dsId);
     uniqueDS[s]++;
@@ -127,14 +127,13 @@ std::map<std::string, Stat> bufferdump(std::string input, DumpOptions opt)
     for (auto d = 0; d < sc.nofSamples(); d++) {
         digitadc += sc.samples[d];
     }
-    cout << "The digit that has just been treated has an overall ADC of " << digitadc << endl;
-    cout << "It contained " << sc.nofSamples() << " samples." << endl;
+    std::cout << "The digit that has just been treated has an overall ADC of " << digitadc << std::endl;
+    std::cout << "It contained " << sc.nofSamples() << " samples." << std::endl;
     int deId = opt.deId();
-    cout << "We are looking at DE " << deId << endl;
-    mapping::Segmentation segment(detId);
+    std::cout << "We are looking at DE " << deId << std::endl;
+    o2::mch::mapping::Segmentation segment(detId);
     int padId = segment.findPadByFEE(dsId, channel);
-    cout << "For this digit we obtained a padId of " << padId << endl;
-    if (padId<0) continue;
+    std::cout << "For this digit we obtained a padId of " << padId << std::endl;
     ++ndigits;
   };
 
