@@ -16,6 +16,7 @@
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawDecoder/Decoder.h"
 #include "MCHRawElecMap/Mapper.h"
+#include "MCHMappingInterface/Segmentation.h"
 #include "boost/program_options.hpp"
 #include <chrono>
 #include <fmt/format.h>
@@ -122,9 +123,18 @@ std::map<std::string, Stat> bufferdump(std::string input, DumpOptions opt)
     auto ch = fmt::format("{}-CH{}", s, channel);
     uniqueChannel[ch]++;
     auto& stat = statChannel[ch];
+    double digitadc(0);
     for (auto d = 0; d < sc.nofSamples(); d++) {
-      stat.incr(sc.samples[d]);
+        digitadc += sc.samples[d];
     }
+    cout << "The digit that has just been treated has an overall ADC of " << digitadc << endl;
+    cout << "It contained " << sc.nofSamples() << " samples." << endl;
+    int deId = opt.deId();
+    cout << "We are looking at DE " << deId << endl;
+    mapping::Segmentation segment(detId);
+    int padId = segment.findPadByFEE(dsId, channel);
+    cout << "For this digit we obtained a padId of " << padId << endl;
+    if (padId<0) continue;
     ++ndigits;
   };
 
