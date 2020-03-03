@@ -13,12 +13,12 @@ o2_add_executable(
         SOURCES rawdump.cxx
         COMPONENT_NAME mch
         PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder Boost::program_options
-        O2::MCHRawImplHelpers RapidJSON::RapidJSON)
+        O2::MCHRawImplHelpers RapidJSON::RapidJSON O2::MCHMappingInterface)
         
 o2_add_executable(
         bufferdump
         SOURCES bufferdump.cxx
         COMPONENT_NAME mch
         PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder Boost::program_options
-        O2::MCHRawImplHelpers RapidJSON::RapidJSON)
+        O2::MCHRawImplHelpers RapidJSON::RapidJSON O2::MCHMappingInterface)
 
