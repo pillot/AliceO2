@@ -130,7 +130,7 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
     std::cout << "The digit that has just been treated has an overall ADC of " << digitadc << std::endl;
     std::cout << "It contained " << sc.nofSamples() << " samples." << std::endl;
     int deId = opt.deId();
-    std::cout << "We are looking at DE " << deId << std::endl;
+    std::cout << "We are looking at DE " << deId << "DS" << s << "CH" << channel << std::endl;
     //o2::mch::mapping::Segmentation segment(deId);
     // Need a conversion Elec2Det for dsId
     //int padId = segment.findPadByFEE(dsId, channel);
