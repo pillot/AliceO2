@@ -97,7 +97,7 @@ std::ostream& operator<<(std::ostream& os, const Stat& s)
   return os;
 }
 template <typename FORMAT, typename CHARGESUM, typename RDH>
-std::map<std::string, Stat> bufferdump(std::string input, DumpOptions opt)
+std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
 {
   std::ifstream in(input.c_str(), std::ios::binary);
   if (!in.good()) {
@@ -261,15 +261,15 @@ int main(int argc, char* argv[])
   }
   if (userLogic) {
     if (chargeSum) {
-      statChannel = bufferdump<UserLogicFormat, ChargeSumMode, RDHv4>(inputFile, opt);
+      statChannel = digitdump<UserLogicFormat, ChargeSumMode, RDHv4>(inputFile, opt);
     } else {
-      statChannel = bufferdump<UserLogicFormat, SampleMode, RDHv4>(inputFile, opt);
+      statChannel = digitdump<UserLogicFormat, SampleMode, RDHv4>(inputFile, opt);
     }
   } else {
     if (chargeSum) {
-      statChannel = bufferdump<BareFormat, ChargeSumMode, RDHv4>(inputFile, opt);
+      statChannel = digitdump<BareFormat, ChargeSumMode, RDHv4>(inputFile, opt);
     } else {
-      statChannel = bufferdump<BareFormat, SampleMode, RDHv4>(inputFile, opt);
+      statChannel = digitdump<BareFormat, SampleMode, RDHv4>(inputFile, opt);
     }
   }
 
