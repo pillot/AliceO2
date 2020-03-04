@@ -134,11 +134,11 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
     Segmentation segment(deId);
     // Need a conversion Elec2Det for dsId
     
-    
-    std::function<std::optional<DsDetId>(DsElecId)> Elec2Det = createElec2DetMapper(deId);
+    gsl::span<int> deidspan{deId}
+    std::function<std::optional<DsDetId>(DsElecId)> Elec2Det = createElec2DetMapper(deidspan);
     DsDetId dsDetId = Elec2Det(dsId);
-    int dsId = dsDetId.dsId();
-    std::cout << "DIGIT INFO:\nADC " << digitadc << " DE# " << deId << " DSid " << dsId << std::endl;
+    int dsIddet = dsDetId.dsId();
+    std::cout << "DIGIT INFO:\nADC " << digitadc << " DE# " << deId << " DSid " << dsIddet << std::endl;
     
     
     //int padId = segment.findPadByFEE(dsId, channel);
