@@ -77,17 +77,15 @@ class DumpOptions
 };
 
 struct Stat {
-  double mean{0};
+  double adc{0};
   double rms{0};
   double q{0};
   int n{0};
   void incr(int v)
-  {
+   {
     n++;
-    auto newMean = mean + (v - mean) / n;
-    q += (v - newMean) * (v - mean);
-    rms = sqrt(q / n);
-    mean = newMean;
+    auto newAdc = adc + v
+    adc = newAdc;
   }
 };
 
@@ -123,12 +121,11 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
     auto ch = fmt::format("{}-CH{}", s, channel);
     uniqueChannel[ch]++;
     auto& stat = statChannel[ch];
-    double digitadc(0);
     for (auto d = 0; d < sc.nofSamples(); d++) {
-        digitadc += sc.samples[d];
+        stat.incr(sc.samples[d]);
     }
-    std::cout << "The digit that has just been treated has an overall ADC of " << digitadc << std::endl;
-    std::cout << "It contained " << sc.nofSamples() << " samples." << std::endl;
+    std::cout << "The channel that has just been treated has a now overall ADC of " << stat.adc << std::endl;
+    std::cout << "This part contained " << sc.nofSamples() << " samples." << std::endl;
     int deId = opt.deId();
     std::cout << "We are looking at DE " << deId << " " << ch << std::endl;
     //o2::mch::mapping::Segmentation segment(deId);
