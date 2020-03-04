@@ -34,7 +34,7 @@ namespace po = boost::program_options;
 extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
 
 using namespace o2::mch::raw;
-using namespace o2::mch::mapping
+using namespace o2::mch::mapping;
 using RDHv4 = o2::header::RAWDataHeaderV4;
 
 class DumpOptions
