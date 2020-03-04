@@ -84,14 +84,14 @@ struct Stat {
   void incr(int v)
    {
     n++;
-    auto newAdc = adc + v
+       auto newAdc = adc + v;
     adc = newAdc;
   }
 };
 
 std::ostream& operator<<(std::ostream& os, const Stat& s)
 {
-  os << fmt::format("MEAN {:7.3f} RMS {:7.3f} NSAMPLES {:5d} ", s.mean, s.rms, s.n);
+  os << fmt::format("MEAN {:7.3f} NSAMPLES {:5d} ", s.adc, s.n);
   return os;
 }
 template <typename FORMAT, typename CHARGESUM, typename RDH>
@@ -192,10 +192,10 @@ void output(const std::map<std::string, Stat>& channels)
     writer.StartObject();
     writer.Key("id");
     writer.String(s.first.c_str());
-    writer.Key("ped");
-    writer.Double(s.second.mean);
-    writer.Key("noise");
-    writer.Double(s.second.rms);
+//    writer.Key("ped");
+//    writer.Double(s.second.mean);
+//    writer.Key("noise");
+//    writer.Double(s.second.rms);
     writer.Key("nof_samples");
     writer.Int(s.second.n);
     writer.EndObject();
