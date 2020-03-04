@@ -134,7 +134,7 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
     Segmentation segment(deId);
     // Need a conversion Elec2Det for dsId
     
-    gsl::span<int> deidspan = span(*deId, 1);
+    std::array deidspan{deId};
     std::function<std::optional<DsDetId>(DsElecId)> Elec2Det = createElec2DetMapper(deidspan);
     DsDetId dsDetId = Elec2Det(dsId);
     int dsIddet = dsDetId.dsId();
