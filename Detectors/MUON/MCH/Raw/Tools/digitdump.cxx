@@ -153,13 +153,13 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
       cruId = opt.cruId().value();
     }
     auto linkId = rdhLinkId(r);
-    auto solar = cruLink2solar(o2::mch::raw::CruLinkId(cruId, linkId, opt.deId()));
-    if (!solar.has_value()) {
-      std::cout << fmt::format("ERROR - Could not get solarUID from CRU,LINK=({},{},{})\n",
-                               cruId, linkId, opt.deId());
-      return std::nullopt;
-    }
-      r.feeId = 860; //solar.value();
+    auto solar = 860;
+//    if (!solar.has_value()) {
+//      std::cout << fmt::format("ERROR - Could not get solarUID from CRU,LINK=({},{},{})\n",
+//                               cruId, linkId, opt.deId());
+//      return std::nullopt;
+//    }
+      r.feeId = solar;
     return r;
   };
 
