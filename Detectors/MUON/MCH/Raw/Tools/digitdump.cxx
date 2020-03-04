@@ -159,7 +159,7 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
                                cruId, linkId, opt.deId());
       return std::nullopt;
     }
-    r.feeId = solar.value();
+      r.feeId = 860; //solar.value();
     return r;
   };
 
