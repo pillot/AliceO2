@@ -20,8 +20,6 @@
 #include <vector>
 
 #include "MCHBase/Digit.h"
-#include "MCHPreClustering/PreClusterFinder.h"
-//#include "MCHBase/DigitBlock.h"
 
 namespace o2
 {
@@ -33,7 +31,7 @@ namespace mch
  * hit reconstruction and correlated into a common cluster.
  */
 struct PreClusterStruct {
-  uint16_t nDigits;          // number of digits attached to this precluster
+  uint16_t nDigits;    // number of digits attached to this precluster
   const Digit* digits; // pointer to the 1st element of the array of digits
 };
 

@@ -90,7 +90,7 @@ void PreClusterFinder::reset()
 }
 
 //_________________________________________________________________________________________________
-void PreClusterFinder::loadDigits(const o2::mch::Digit* digits, uint32_t nDigits)
+void PreClusterFinder::loadDigits(const Digit* digits, int nDigits)
 {
   /// fill the Mapping::MpDE structure with fired pads
 
@@ -98,19 +98,22 @@ void PreClusterFinder::loadDigits(const o2::mch::Digit* digits, uint32_t nDigits
   uint16_t iPlane(0);
 
   // loop over digits
-  for (uint32_t i = 0; i < nDigits; ++i) {
+  for (int i = 0; i < nDigits; ++i) {
 
-    const o2::mch::Digit& digit(digits[i]);
+    const Digit& digit(digits[i]);
 
-    int deid = digit.getDetID();
-
-    int deIndex = mDEIndices[deid];
+    int deIndex = mDEIndices[digit.getDetID()];
     assert(deIndex >= 0 && deIndex < SNDEs);
 
     DetectionElement& de(mDEs[deIndex]);
 
-    iPad = digit.getPadID();
-    iPlane = de.mapping->segment->isBendingPad(iPad);
+    iPlane = (cathode(digit.getPadID()) == de.mapping->iCath[0]) ? 0 : 1;
+    iPad = de.mapping->padIndices[iPlane].GetValue(digit.getPadID());
+    if (iPad == 0) {
+      LOG(WARN) << "pad ID " << digit.getPadID() << " does not exist in the mapping";
+      continue;
+    }
+    --iPad;
 
     // register this digit
     uint16_t iDigit = de.nFiredPads[0] + de.nFiredPads[1];
