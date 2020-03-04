@@ -17,6 +17,7 @@
 #include "MCHRawDecoder/Decoder.h"
 #include "MCHRawElecMap/Mapper.h"
 #include "MCHMappingInterface/Segmentation.h"
+#include "dslist.h"
 #include "boost/program_options.hpp"
 #include <chrono>
 #include <fmt/format.h>
@@ -131,9 +132,16 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
     std::cout << "\nWe are looking at DE " << deId << " " << ch << std::endl;
     std::cout << ch << " has a now overall ADC of " << stat.adc << std::endl;
     std::cout << "This part contained " << sc.nofSamples() << " samples. Of total ADC " << digitadc << std::endl;
-        std::cout << "DIGIT INFO:\nADC " << digitadc << " DE# " << deId << " DSid - Not yet" << std::endl;
     Segmentation segment(deId);
     // Need a conversion Elec2Det for dsId
+    
+    
+    std::function<std::optional<DsDetId>(DsElecId)> Elec2Det = createElec2DetMapper(deId);
+    DsDetId dsDetId = Elec2Det(dsId);
+    int dsId = dsDetId.dsId();
+    std::cout << "DIGIT INFO:\nADC " << digitadc << " DE# " << deId << " DSid " << dsId << std::endl;
+    
+    
     //int padId = segment.findPadByFEE(dsId, channel);
    // std::cout << "For this digit we obtained a padId of " << padId << std::endl;
     ++ndigits;
