@@ -160,10 +160,10 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
       o2::mch::Digit* mchdigit = digits.back().get();
       mchdigit->setDetID(deId);
       mchdigit->setPadID(padId);
-      mchdigit->setADC(adc);
+      mchdigit->setADC(digitadc);
       mchdigit->setTimeStamp(time);
       
-      std::cout << "DIGIT STORED:\nADC " << digits.back.get()->getADC() << " DE# " << digits.back.get()->getDetID() << " PadId " << digits.back.get()->getPadID() << " time "<< digits.back.get()->getTimeStamp() << std::endl;
+      std::cout << "DIGIT STORED:\nADC " << digits.back().get()->getADC() << " DE# " << digits.back().get()->getDetID() << " PadId " << digits.back().get()->getPadID() << " time "<< digits.back().get()->getTimeStamp() << std::endl;
 
         // std::cout << "For this digit we obtained a padId of " << padId << std::endl;
             ++ndigits;
