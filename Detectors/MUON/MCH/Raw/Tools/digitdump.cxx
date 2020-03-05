@@ -139,7 +139,7 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
       deidspan.push_back(deId);
       int dsIddet;
     std::function<std::optional<DsDetId>(DsElecId)> Elec2Det = createElec2DetMapper<ElectronicMapperGenerated>(deidspan);
-      if(has_value(Elec2Det(dsId))){
+      if(auto opt = Elec2Det(dsId); opt.has_value()){
         DsDetId dsDetId = Elec2Det(dsId).value();
         dsIddet = dsDetId.dsId();
       }
