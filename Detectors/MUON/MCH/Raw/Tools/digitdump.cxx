@@ -138,7 +138,7 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
     std::vector<int> deidspan;
       deidspan.push_back(deId);
       int dsIddet;
-    std::function<std::optional<DsDetId>(DsElecId)> Elec2Det = createElec2DetMapper<ElectronicMapperGenerated>(deidspan);
+    std::function<std::optional<DsDetId>(DsElecId)> Elec2Det = createElec2DetMapper<ElectronicMapperDummy>(deidspan);
       if(auto opt = Elec2Det(dsId); opt.has_value()){
         DsDetId dsDetId = Elec2Det(dsId).value();
         dsIddet = dsDetId.dsId();
@@ -154,7 +154,7 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
             ++ndigits;
   };
 
-  auto cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperGenerated>();
+  auto cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperDummy>();
 
   size_t nrdhs{0};
   auto rdhHandler = [&](const RDH& rdh) -> std::optional<RDH> {
