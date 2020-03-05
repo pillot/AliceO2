@@ -139,20 +139,8 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
       deidspan.push_back(deId);
       int dsIddet;
     std::function<std::optional<DsDetId>(DsElecId)> Elec2Det = createElec2DetMapper<ElectronicMapperGenerated>(deidspan);
-      try{
         DsDetId dsDetId = Elec2Det(dsId).value();
         dsIddet = dsDetId.dsId();
-      }
-      catch (const networkIOException& e) {
-         // Code that executes when an exception of type
-         // networkIOException is thrown in the try block
-         // ...
-         // Log error message in the exception object
-         cerr << e.what();
-      }
-      if(!dsIddet){
-          dsIddet = 0;
-      }
         std::cout << "DIGIT INFO:\nADC " << digitadc << " DE# " << deId << " DSid " << dsIddet << std::endl;
 
 
