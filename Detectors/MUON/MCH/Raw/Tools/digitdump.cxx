@@ -138,14 +138,19 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
     std::vector<int> deidspan;
       deidspan.push_back(deId);
     std::function<std::optional<DsDetId>(DsElecId)> Elec2Det = createElec2DetMapper<ElectronicMapperGenerated>(deidspan);
-    DsDetId dsDetId = Elec2Det(dsId).value();
-    int dsIddet = dsDetId.dsId();
-    std::cout << "DIGIT INFO:\nADC " << digitadc << " DE# " << deId << " DSid " << dsIddet << std::endl;
-    
-    
-    //int padId = segment.findPadByFEE(dsId, channel);
-   // std::cout << "For this digit we obtained a padId of " << padId << std::endl;
-    ++ndigits;
+      if(dsId.value()){
+        DsDetId dsDetId = Elec2Det(dsId).value();
+        int dsIddet = dsDetId.dsId();
+      }
+      else{
+          int dsIddet = 0;
+      }
+        std::cout << "DIGIT INFO:\nADC " << digitadc << " DE# " << deId << " DSid " << dsIddet << std::endl;
+
+
+        //int padId = segment.findPadByFEE(dsId, channel);
+        // std::cout << "For this digit we obtained a padId of " << padId << std::endl;
+            ++ndigits;
   };
 
   auto cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperGenerated>();
