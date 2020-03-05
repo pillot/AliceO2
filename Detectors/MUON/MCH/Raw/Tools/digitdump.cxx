@@ -17,6 +17,8 @@
 #include "MCHRawDecoder/Decoder.h"
 #include "MCHRawElecMap/Mapper.h"
 #include "MCHMappingInterface/Segmentation.h"
+#include "MCHBase/DigitBlock.h"
+#include "MCHBase/Digit.h"
 #include "boost/program_options.hpp"
 #include <chrono>
 #include <vector>
@@ -114,9 +116,11 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
   std::map<std::string, int> uniqueDS;
   std::map<std::string, int> uniqueChannel;
   std::map<std::string, Stat> statChannel;
+  std::vector< std::unique_ptr<Digit> > digits;
+    digits.clear();
 
   memset(&buffer[0], 0, buffer.size());
-  auto channelHandler = [&ndigits, &uniqueDS, &uniqueChannel, &statChannel, &opt](DsElecId dsId,
+  auto channelHandler = [&ndigits, &uniqueDS, &uniqueChannel, &statChannel, &opt, &digits](DsElecId dsId,
                                                                             uint8_t channel, o2::mch::raw::SampaCluster sc) {
     auto s = asString(dsId);
     uniqueDS[s]++;
@@ -148,6 +152,17 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
       }
       int padId = segment.findPadByFEE(dsIddet, channel);
         std::cout << "DIGIT INFO:\nADC " << digitadc << " DE# " << deId << " DSid " << dsIddet << " PadId " <<padId << std::endl;
+      
+      int time = 0;
+      
+      digits.push_back( std::make_unique<Digit>() );
+      Digit* mchdigit = digits.back().get();
+      mchdigit->setDetID(deId);
+      mchdigit->setPadID(padId);
+      mchdigit->setADC(adc);
+      mchdigit->setTimeStamp(time);
+      
+      std::cout << "DIGIT STORED:\nADC " << digits.back.get()->getADC() << " DE# " << digits.back.get()->getDetID() << " PadId " << digits.back.get()->getPadID() << " time "<< digits.back.get()->getTimeStamp() << std::endl;
 
         // std::cout << "For this digit we obtained a padId of " << padId << std::endl;
             ++ndigits;
