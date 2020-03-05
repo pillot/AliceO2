@@ -212,6 +212,25 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
     std::cout << " Number of digits " << digits.size() << "\n";
     std::cout << decStat << "\n";
   }
+    
+        //A ce stade, on a un vecteur de digits rempli. On doit pouvoir le metrre dans un buffer et l'envoyer.
+    
+    cout << "Filling buffer of digits..." << endl;
+    
+    o2::mch::Digit* digitsBuffer = NULL;
+    nDigits = digits.size();
+    digitsBuffer = (o2::mch::Digit*)realloc(digitsBuffer, sizeof(o2::mch::Digit) * nDigits);
+    
+    o2::mch::Digit* ptr = (o2::mch::Digit*)digitsBuffer;
+    for(unsigned int di = 0; di < nDigits; di++) {
+
+      memcpy(ptr, digits[di].get(), sizeof(o2::mch::Digit));
+        if(di % 10 == 0){
+        std::cout << "Added digit # " << di << " to buffer " << std::endl;
+        }
+      ptr += 1;
+    }
+    
   return statChannel;
 }
 
