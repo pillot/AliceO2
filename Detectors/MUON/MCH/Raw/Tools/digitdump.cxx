@@ -143,6 +143,13 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
         DsDetId dsDetId = Elec2Det(dsId).value();
         dsIddet = dsDetId.dsId();
       }
+      catch (const networkIOException& e) {
+         // Code that executes when an exception of type
+         // networkIOException is thrown in the try block
+         // ...
+         // Log error message in the exception object
+         cerr << e.what();
+      }
       if(!dsIddet){
           dsIddet = 0;
       }
