@@ -209,6 +209,7 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
   if (!opt.json()) {
     std::cout << ndigits << " digits seen - " << nrdhs << " RDHs seen - " << npages << " npages read\n";
     std::cout << "#unique DS=" << uniqueDS.size() << " #unique Channel=" << uniqueChannel.size() << "\n";
+    std::cout << " Number of digits " << digits.size() << "\n";
     std::cout << decStat << "\n";
   }
   return statChannel;
