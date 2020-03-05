@@ -137,7 +137,7 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
     int deidspan[1];
       deidspan[0] = deId;
     std::function<std::optional<DsDetId>(DsElecId)> Elec2Det = createElec2DetMapper<int>(deidspan);
-    DsDetId dsDetId = Elec2Det(dsId);
+    DsDetId dsDetId = Elec2Det(dsId).value();
     int dsIddet = dsDetId.dsId();
     std::cout << "DIGIT INFO:\nADC " << digitadc << " DE# " << deId << " DSid " << dsIddet << std::endl;
     
