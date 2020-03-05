@@ -118,6 +118,7 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
   std::map<std::string, Stat> statChannel;
   std::vector< std::unique_ptr<Digit> > digits;
     digits.clear();
+    std::cout << "On nettoie le vector digits" << std::endl;
 
   memset(&buffer[0], 0, buffer.size());
   auto channelHandler = [&ndigits, &uniqueDS, &uniqueChannel, &statChannel, &opt, &digits](DsElecId dsId,

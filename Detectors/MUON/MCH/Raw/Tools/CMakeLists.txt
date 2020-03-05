@@ -20,5 +20,5 @@ o2_add_executable(
         SOURCES digitdump.cxx
         COMPONENT_NAME mch
         PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder Boost::program_options
-        O2::MCHRawImplHelpers RapidJSON::RapidJSON O2::MCHMappingInterface O2::MCHMappingImpl3 O2::MCHRawElecMap)
+        O2::MCHRawImplHelpers RapidJSON::RapidJSON O2::MCHMappingInterface O2::MCHMappingImpl3 O2::MCHRawElecMap O2::MCHBase)
 
