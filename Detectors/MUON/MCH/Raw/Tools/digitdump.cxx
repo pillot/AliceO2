@@ -116,7 +116,7 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
   std::map<std::string, int> uniqueDS;
   std::map<std::string, int> uniqueChannel;
   std::map<std::string, Stat> statChannel;
-  std::vector< std::unique_ptr<Digit> > digits;
+  std::vector< std::unique_ptr<o2::mch::Digit> > digits;
     digits.clear();
     std::cout << "On nettoie le vector digits" << std::endl;
 
@@ -156,8 +156,8 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
       
       int time = 0;
       
-      digits.push_back( std::make_unique<Digit>() );
-      Digit* mchdigit = digits.back().get();
+      digits.push_back( std::make_unique<o2::mch::Digit>() );
+      o2::mch::Digit* mchdigit = digits.back().get();
       mchdigit->setDetID(deId);
       mchdigit->setPadID(padId);
       mchdigit->setADC(adc);
