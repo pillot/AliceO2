@@ -245,6 +245,7 @@ class GPUTPCTracker : public GPUProcessor
 
   void PerformGlobalTracking(GPUTPCTracker& sliceLeft, GPUTPCTracker& sliceRight);
   void PerformGlobalTracking(GPUTPCTracker& sliceTarget, bool right);
+  static int GlobalTrackingSliceOrder(int iSlice);
 
   void* LinkTmpMemory() { return mLinkTmpMemory; }
 
@@ -256,6 +257,8 @@ class GPUTPCTracker : public GPUProcessor
 #endif
 
  private:
+  friend class GPUTPCNeighboursFinder;
+
   char* mLinkTmpMemory; // tmp memory for hits after neighbours finder
 
   int mISlice; // Number of slice
