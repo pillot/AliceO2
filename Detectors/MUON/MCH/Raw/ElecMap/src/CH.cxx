@@ -30,8 +30,8 @@ void add_cru(std::map<uint16_t, uint32_t>& s2c, int cruId, int linkId, uint16_t 
   auto code = encode(o2::mch::raw::CruLinkId(cruId, linkId, deId));
   // ensure we don't have duplicated codes in the map
 
-  // std::cout << fmt::format("CRU {:4d} LINK {:2d} SOLAR {:4d} DE {:4d} CODE {:8d}\n",
-  //                          cruId, linkId, solarId, deId, code);
+   std::cout << fmt::format("[AddCRU] CRU {:4d} LINK {:2d} SOLAR {:4d} DE {:4d} CODE {:8d}\n",
+                            cruId, linkId, solarId, deId, code);
 
   if (std::find_if(begin(s2c), end(s2c), [code](const auto& v) { return v.second == code; }) != end(s2c)) {
     throw std::logic_error(fmt::format("Seems cru,link,deId=({},{},{}) is already referenced in the map !",

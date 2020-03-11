@@ -143,7 +143,7 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
     std::vector<int> deidspan;
       deidspan.push_back(deId);
       int dsIddet;
-    std::function<std::optional<DsDetId>(DsElecId)> Elec2Det = createElec2DetMapper<ElectronicMapperGenerated>(deidspan);
+    auto Elec2Det = createElec2DetMapper<ElectronicMapperGenerated>(deidspan);
       if(auto opt = Elec2Det(dsId); opt.has_value()){
         DsDetId dsDetId = Elec2Det(dsId).value();
         dsIddet = dsDetId.dsId();
@@ -151,8 +151,8 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
       else{
           dsIddet = 9999;
       }
-      int padId = segment.findPadByFEE(dsIddet, channel);
-        std::cout << "DIGIT INFO:\nADC " << digitadc << " DE# " << deId << " DSid " << dsIddet << " PadId " <<padId << std::endl;
+      int padId = segment.findPadByFEE(dsIddet, int(channel));
+        std::cout << "DIGIT INFO:\nADC " << digitadc << " DE# " << deId << " DSid " << dsIddet << " PadId " << padId << std::endl;
       
       int time = 0;
       
@@ -184,15 +184,18 @@ std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
       cruId = opt.cruId().value();
     }
     auto linkId = rdhLinkId(r);
-    auto solar = 860;
-//    if (!solar.has_value()) {
-//      std::cout << fmt::format("ERROR - Could not get solarUID from CRU,LINK=({},{},{})\n",
-//                               cruId, linkId, opt.deId());
-//      return std::nullopt;
-//    }
-      r.feeId = solar;
+    auto solar = cruLink2solar(o2::mch::raw::CruLinkId(cruId, linkId, opt.deId()));
+    if (!solar.has_value()) {
+      std::cout << fmt::format("ERROR - Could not get solarUID from CRU,LINK=({},{},{})\n", cruId, linkId, opt.deId());
+      return std::nullopt;
+    }
+      r.feeId = solar.value();
+          std::cout << "INFO:\nCRUID " << cruId << " LINKID " << int(linkId) << " SOLAR " << solar.value() << std::endl;
     return r;
   };
+    
+    
+    
 
   o2::mch::raw::Decoder decode = o2::mch::raw::createDecoder<FORMAT, CHARGESUM, RDH>(rdhHandler, channelHandler);
 
