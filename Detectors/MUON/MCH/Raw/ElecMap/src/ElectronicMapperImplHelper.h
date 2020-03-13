@@ -69,7 +69,7 @@ std::function<std::optional<uint16_t>(CruLinkId)>
 {
   return [cruLink2solar](o2::mch::raw::CruLinkId id) -> std::optional<uint16_t> {
     auto it = cruLink2solar.find(encode(id));
-      auto crid = decodeCruLinkId(94240813);
+  //    auto crid = decodeCruLinkId(94240813);
      // std::cout << "The decoding of 94240813 would give cruid " << int(crid.cruId()) << " deid " << int(crid.deId()) << " linkid " << int(crid.linkId()) << std::endl;
       std::cout << "encode(CruLinkId) = " << encode(id) << std::endl;
     if (it == cruLink2solar.end()) {

@@ -30,7 +30,9 @@ CruLinkId::CruLinkId(uint16_t cruId, uint8_t linkId, uint16_t deId)
 
 uint32_t encode(const CruLinkId& id)
 {
-  return (id.deId() << 17) | (id.cruId() << 5) | id.linkId();
+      //  std::cout << "[CruLinkId - Encode] (id.cruId() << 5) | id.linkId() with id.cruId() = " << id.cruId() << " and id.linkId() = " << id.linkId() << std::endl;
+  return (id.cruId() << 5) | id.linkId();
+    //(id.deId() << 17) | (id.cruId() << 5) | id.linkId();
 }
 
 CruLinkId decodeCruLinkId(uint32_t x)

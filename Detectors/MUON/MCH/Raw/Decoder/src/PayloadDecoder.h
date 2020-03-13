@@ -61,6 +61,7 @@ template <typename RDH, typename GBTDECODER>
 size_t PayloadDecoder<RDH, GBTDECODER>::process(const RDH& rdh, gsl::span<uint8_t> buffer)
 {
   auto solarId = rdh.feeId;
+    std::cout << "[PayloadDecoder] solarId = rdh.feeId = " << int(solarId) << std::endl;
   auto c = mDecoders.find(solarId);
   if (c == mDecoders.end()) {
     mDecoders.emplace(solarId, GBTDECODER(solarId, mChannelHandler));

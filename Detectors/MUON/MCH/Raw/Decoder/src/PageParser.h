@@ -63,9 +63,11 @@ DecoderStat PageParser<RDH, PAYLOADDECODER>::parse(gsl::span<uint8_t> buffer)
       return mStats;
     }
     if (hasOrbitJump(rdhOrbit(originalRDH), mOrbit)) {
+        std::cout << "Has orbit jump" << std::endl;
       ++mStats.nofOrbitJumps;
       mDecoder.reset();
     } else if (rdhOrbit(originalRDH) != mOrbit) {
+        std::cout << "diff mOrbit" << std::endl;
       ++mStats.nofOrbitSeen;
     }
     mOrbit = rdhOrbit(originalRDH);

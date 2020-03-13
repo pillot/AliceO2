@@ -31,236 +31,45 @@
 #include <rapidjson/writer.h>
 #include <optional>
 #include <cstdint>
+#include "Framework/DataProcessorSpec.h"
+#include "Handlers.h"
+#include "DumpOptionsAndStat.h"
 
 namespace po = boost::program_options;
 
-extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
 
+using namespace o2::framework;
 using namespace o2::mch::mapping;
 using namespace o2::mch::raw;
 using RDHv4 = o2::header::RAWDataHeaderV4;
 
-class DumpOptions
-{
- public:
-  DumpOptions(unsigned int deId, unsigned int maxNofRDHs, bool showRDHs, bool jsonOutput)
-    : mDeId{deId}, mMaxNofRDHs{maxNofRDHs == 0 ? std::numeric_limits<unsigned int>::max() : maxNofRDHs}, mShowRDHs{showRDHs}, mJSON{jsonOutput} {}
-
-  unsigned int deId() const
-  {
-    return mDeId;
-  }
-  unsigned int maxNofRDHs() const
-  {
-    return mMaxNofRDHs;
-  }
-
-  bool showRDHs() const
-  {
-    return mShowRDHs;
-  }
-
-  bool json() const
-  {
-    return mJSON;
-  }
-
-  std::optional<uint16_t> cruId() const
-  {
-    return mCruId;
-  }
-
-  void cruId(uint16_t c) { mCruId = c; }
-
- private:
-  unsigned int mDeId;
-  unsigned int mMaxNofRDHs;
-  bool mShowRDHs;
-  bool mJSON;
-  std::optional<uint16_t> mCruId{std::nullopt};
-};
-
-struct Stat {
-  double adc{0};
-  double rms{0};
-  double q{0};
-  int n{0};
-  void incr(int v)
-   {
-    n++;
-       auto newAdc = adc + v;
-    adc = newAdc;
-  }
-};
-
-std::ostream& operator<<(std::ostream& os, const Stat& s)
-{
-  os << fmt::format("MEAN {:7.3f} NSAMPLES {:5d} ", s.adc, s.n);
-  return os;
-}
+    //  Récupère un fichier sur l'ordinateur et utilise le bout de code de base decodeBuffer pour décoder
+    
+    
 template <typename FORMAT, typename CHARGESUM, typename RDH>
-std::map<std::string, Stat> digitdump(std::string input, DumpOptions opt)
+void digitdump(std::string input, DumpOptions opt)
 {
   std::ifstream in(input.c_str(), std::ios::binary);
   if (!in.good()) {
     std::cout << "could not open file " << input << "\n";
-    return {};
+    return;
   }
   constexpr size_t pageSize = 8192;
 
-  std::array<uint8_t, pageSize> buffer;
-  gsl::span<uint8_t> sbuffer(buffer);
-
-  size_t ndigits{0};
-
-  std::map<std::string, int> uniqueDS;
-  std::map<std::string, int> uniqueChannel;
-  std::map<std::string, Stat> statChannel;
-  std::vector< std::unique_ptr<o2::mch::Digit> > digits;
-    digits.clear();
-    std::cout << "On nettoie le vector digits" << std::endl;
-
-  memset(&buffer[0], 0, buffer.size());
-  auto channelHandler = [&ndigits, &uniqueDS, &uniqueChannel, &statChannel, &opt, &digits](DsElecId dsId,
-                                                                            uint8_t channel, o2::mch::raw::SampaCluster sc) {
-    auto s = asString(dsId);
-    uniqueDS[s]++;
-    auto ch = fmt::format("{}-CH{}", s, channel);
-    uniqueChannel[ch]++;
-    auto& stat = statChannel[ch];
-    double digitadc(0);
-    for (auto d = 0; d < sc.nofSamples(); d++) {
-        stat.incr(sc.samples[d]);
-        digitadc += sc.samples[d];
-    }
-    int deId = opt.deId();
-    std::cout << "\nWe are looking at DE " << deId << " " << ch << std::endl;
-    std::cout << ch << " has a now overall ADC of " << stat.adc << std::endl;
-    std::cout << "This part contained " << sc.nofSamples() << " samples. Of total ADC " << digitadc << std::endl;
-    Segmentation segment(deId);
-    // Need a conversion Elec2Det for dsId
-    
-    std::vector<int> deidspan;
-      deidspan.push_back(deId);
-      int dsIddet;
-    auto Elec2Det = createElec2DetMapper<ElectronicMapperGenerated>(deidspan);
-      if(auto opt = Elec2Det(dsId); opt.has_value()){
-        DsDetId dsDetId = Elec2Det(dsId).value();
-        dsIddet = dsDetId.dsId();
-      }
-      else{
-          dsIddet = 9999;
-      }
-      int padId = segment.findPadByFEE(dsIddet, int(channel));
-        std::cout << "DIGIT INFO:\nADC " << digitadc << " DE# " << deId << " DSid " << dsIddet << " PadId " << padId << std::endl;
-      
-      int time = 0;
-      
-      digits.push_back( std::make_unique<o2::mch::Digit>() );
-      o2::mch::Digit* mchdigit = digits.back().get();
-      mchdigit->setDetID(deId);
-      mchdigit->setPadID(padId);
-      mchdigit->setADC(digitadc);
-      mchdigit->setTimeStamp(time);
-      
-      std::cout << "DIGIT STORED:\nADC " << digits.back().get()->getADC() << " DE# " << digits.back().get()->getDetID() << " PadId " << digits.back().get()->getPadID() << " time "<< digits.back().get()->getTimeStamp() << std::endl;
-
-        // std::cout << "For this digit we obtained a padId of " << padId << std::endl;
-            ++ndigits;
-  };
-
-  auto cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperGenerated>();
-
-  size_t nrdhs{0};
-  auto rdhHandler = [&](const RDH& rdh) -> std::optional<RDH> {
-    nrdhs++;
-    if (opt.showRDHs()) {
-      std::cout << nrdhs << "--" << rdh << "\n";
-    }
-    auto r = rdh;
-    auto cruId = r.cruID;
-    if (opt.cruId().has_value()) {
-      // force cruId to externally given value
-      cruId = opt.cruId().value();
-    }
-    auto linkId = rdhLinkId(r);
-    auto solar = cruLink2solar(o2::mch::raw::CruLinkId(cruId, linkId, opt.deId()));
-    if (!solar.has_value()) {
-      std::cout << fmt::format("ERROR - Could not get solarUID from CRU,LINK=({},{},{})\n", cruId, linkId, opt.deId());
-      return std::nullopt;
-    }
-      r.feeId = solar.value();
-          std::cout << "INFO:\nCRUID " << cruId << " LINKID " << int(linkId) << " SOLAR " << solar.value() << std::endl;
-    return r;
-  };
-    
-    
-    
-
-  o2::mch::raw::Decoder decode = o2::mch::raw::createDecoder<FORMAT, CHARGESUM, RDH>(rdhHandler, channelHandler);
-
-  std::vector<std::chrono::microseconds> timers;
+    std::vector<uint8_t> buffer(pageSize);
 
   size_t npages{0};
-  DecoderStat decStat;
+  size_t outsize;
 
   while (npages < opt.maxNofRDHs() && in.read(reinterpret_cast<char*>(&buffer[0]), pageSize)) {
     npages++;
-    decStat = decode(sbuffer);
-  }
-
-  if (!opt.json()) {
-    std::cout << ndigits << " digits seen - " << nrdhs << " RDHs seen - " << npages << " npages read\n";
-    std::cout << "#unique DS=" << uniqueDS.size() << " #unique Channel=" << uniqueChannel.size() << "\n";
-    std::cout << " Number of digits " << digits.size() << "\n";
-    std::cout << decStat << "\n";
+    char* outbuffer = decodeBuffer<FORMAT, CHARGESUM, RDH>(buffer, outsize);
   }
     
-        //A ce stade, on a un vecteur de digits rempli. On doit pouvoir le metrre dans un buffer et l'envoyer.
-    
-    std::cout << "Filling buffer of digits..." << std::endl;
-    
-    o2::mch::Digit* digitsBuffer = NULL;
-    digitsBuffer = (o2::mch::Digit*)realloc(digitsBuffer, sizeof(o2::mch::Digit) * ndigits);
-    
-    o2::mch::Digit* ptr = (o2::mch::Digit*)digitsBuffer;
-    for(unsigned int di = 0; di < ndigits; di++) {
-
-      memcpy(ptr, digits[di].get(), sizeof(o2::mch::Digit));
-        if(di % 10 == 0){
-        std::cout << "Added digit # " << di << " to buffer " << std::endl;
-        }
-      ptr += 1;
-    }
-    
-  return statChannel;
+  return;
 }
-
-void output(const std::map<std::string, Stat>& channels)
-{
-  rapidjson::StringBuffer buffer;
-  rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-
-  writer.StartObject();
-  writer.Key("channels");
-  writer.StartArray();
-  for (auto s : channels) {
-    writer.StartObject();
-    writer.Key("id");
-    writer.String(s.first.c_str());
-//    writer.Key("ped");
-//    writer.Double(s.second.mean);
-//    writer.Key("noise");
-//    writer.Double(s.second.rms);
-    writer.Key("nof_samples");
-    writer.Int(s.second.n);
-    writer.EndObject();
-  }
-  writer.EndArray();
-  writer.EndObject();
-  std::cout << buffer.GetString() << "\n";
-}
-
+    
+    
 int main(int argc, char* argv[])
 {
   std::string prefix;
@@ -284,7 +93,7 @@ int main(int argc, char* argv[])
       ("userLogic,u",po::bool_switch(&userLogic),"user logic format")
       ("chargeSum,c",po::bool_switch(&chargeSum),"charge sum format")
       ("json,j",po::bool_switch(&jsonOutput),"output means and rms in json format")
-      ("de,d",po::value<unsigned int>(&deId)->required(),"detection element id of the data to be decoded")
+      ("de,d",po::value<unsigned int>(&deId),"detection element id of the data to be decoded")
       ("cru",po::value<uint16_t>(),"force cruId")
       ;
   // clang-format on
@@ -307,28 +116,24 @@ int main(int argc, char* argv[])
   }
 
   DumpOptions opt(deId, nrdhs, showRDHs, jsonOutput);
-  std::map<std::string, Stat> statChannel;
 
   if (vm.count("cru")) {
     opt.cruId(vm["cru"].as<uint16_t>());
   }
   if (userLogic) {
     if (chargeSum) {
-      statChannel = digitdump<UserLogicFormat, ChargeSumMode, RDHv4>(inputFile, opt);
+      digitdump<UserLogicFormat, ChargeSumMode, RDHv4>(inputFile, opt);
     } else {
-      statChannel = digitdump<UserLogicFormat, SampleMode, RDHv4>(inputFile, opt);
+      digitdump<UserLogicFormat, SampleMode, RDHv4>(inputFile, opt);
     }
   } else {
     if (chargeSum) {
-      statChannel = digitdump<BareFormat, ChargeSumMode, RDHv4>(inputFile, opt);
+      digitdump<BareFormat, ChargeSumMode, RDHv4>(inputFile, opt);
     } else {
-      statChannel = digitdump<BareFormat, SampleMode, RDHv4>(inputFile, opt);
+      digitdump<BareFormat, SampleMode, RDHv4>(inputFile, opt);
     }
   }
 
-  if (jsonOutput) {
-    output(statChannel);
-  }
   return 0;
 }
 

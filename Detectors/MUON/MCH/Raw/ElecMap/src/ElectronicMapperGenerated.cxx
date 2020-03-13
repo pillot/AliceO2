@@ -59,12 +59,12 @@ std::map<uint16_t, uint32_t> filter(const std::map<uint16_t, uint32_t>& m, gsl::
 std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
 {
   std::map<uint16_t, uint32_t> e2d;
-  fillElec2DetCH5R(e2d);
-  fillElec2DetCH5L(e2d);
+//  fillElec2DetCH5R(e2d);
+//  fillElec2DetCH5L(e2d);
   fillElec2DetCH6R(e2d);
-  fillElec2DetCH6L(e2d);
-  fillElec2DetCH7R(e2d);
-  fillElec2DetCH7L(e2d);
+//  fillElec2DetCH6L(e2d);
+//  fillElec2DetCH7R(e2d);
+//  fillElec2DetCH7L(e2d);
   fillElec2DetCH8L(e2d);
   return filter(e2d, deIds);
 }
@@ -72,12 +72,12 @@ std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
 std::map<uint16_t, uint32_t> buildSolarId2CruLinkIdMap()
 {
   std::map<uint16_t, uint32_t> s2c;
-  fillSolar2CruLinkCH5R(s2c);
-  fillSolar2CruLinkCH5L(s2c);
+//  fillSolar2CruLinkCH5R(s2c);
+//  fillSolar2CruLinkCH5L(s2c);
   fillSolar2CruLinkCH6R(s2c);
-  fillSolar2CruLinkCH6L(s2c);
-  fillSolar2CruLinkCH7R(s2c);
-  fillSolar2CruLinkCH7L(s2c);
+//  fillSolar2CruLinkCH6L(s2c);
+//  fillSolar2CruLinkCH7R(s2c);
+//  fillSolar2CruLinkCH7L(s2c);
   fillSolar2CruLinkCH8L(s2c);
   return s2c;
 }

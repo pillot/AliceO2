@@ -27,7 +27,7 @@ void add(std::map<uint16_t, uint32_t>& e2d, int deId, int dsId,
 }
 void add_cru(std::map<uint16_t, uint32_t>& s2c, int cruId, int linkId, uint16_t solarId, uint16_t deId)
 {
-  auto code = encode(o2::mch::raw::CruLinkId(cruId, linkId, deId));
+  auto code = encode(o2::mch::raw::CruLinkId(cruId, linkId));
   // ensure we don't have duplicated codes in the map
 
    std::cout << fmt::format("[AddCRU] CRU {:4d} LINK {:2d} SOLAR {:4d} DE {:4d} CODE {:8d}\n",
