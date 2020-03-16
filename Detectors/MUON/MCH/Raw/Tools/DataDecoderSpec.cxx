@@ -31,68 +31,45 @@
 #include "Framework/runDataProcessing.h"
 #include "MCHBase/Digit.h"
 #include "DataDecoderSpec.h"
-#include "Handlers.h"
+#include "RawBufferDecoder.h"
 
 // Dans ce code, on récupère un infut aui est un message avec le buffer, on fait tourner le code de base decodeBuffer qui est dans Handlers, et on renvoir un message de sortie (inspiré de FileReader de Andrea)
 
 using namespace o2;
 using namespace o2::framework;
 
-class DigitReaderTask
+class DataDecoderTask
 {
- public:
+  RawBufferDecoder<BareFormat, SampleMode, RDHv4> decoder;
+  //RawBufferDecoder<UserLogicFormat, SampleMode, RDHv4> decoder;
+
+public:
   //_________________________________________________________________________________________________
   void init(framework::InitContext& ic)
   {
-// Rien à initialiser
+    // Rien à initialiser
   }
 
   //_________________________________________________________________________________________________
   void run(framework::ProcessingContext& pc)
   {
+    bool verbose = false;
+    // get the input buffer
 
-        // get the input buffer
-      
-      for (auto&& input : pc.inputs()) {
-         std::cout << "run RawDataProcessor: input " << input.spec->binding << std::endl;
-      }
-      
-      std::cout << "A" << std::endl;
-      
-        auto msgIn = pc.inputs().get<gsl::span<char>>("readout");
-        auto bufferPtrIn = msgIn.data();
-        auto sizeIn = msgIn.size();
-      
-      std::cout << "We got the input buffer" << std::endl;
-      
-      std::vector<uint8_t> buffer(sizeIn);
-      
-      
-        // get header info and check message consistency
-//                    if (sizeIn < SSizeOfDigitBlock) {
-//                      throw out_of_range("missing DigitBlock");
-//                    }
-//                    auto digitBlock(reinterpret_cast<const DigitBlock*>(bufferPtrIn));
-//                    bufferPtrIn += SSizeOfDigitBlock;
-//                    sizeIn -= SSizeOfDigitBlock;
-//                    if (digitBlock->header.fRecordWidth != SSizeOfDigitStruct) {
-//                      throw length_error("incorrect size of digits. Corrupted message?");
-//                    }
-//                    if (sizeIn != digitBlock->header.fNrecords * SSizeOfDigitStruct) {
-//                      throw length_error("incorrect payload");
-//                    }
+    auto msgIn = pc.inputs().get<gsl::span<char>>("readout");
+    auto bufferPtrIn = msgIn.data();
+    auto sizeIn = msgIn.size();
 
-        // load the digits to get the fired pads
-//                    auto digits(reinterpret_cast<const DigitStruct*>(bufferPtrIn));
+    if(verbose) std::cout << "We got the input buffer" << std::endl;
 
-        // Add digits conversion here
-//                    mPreClusterFinder.loadDigits(digits, digitBlock->header.fNrecords);
+    //std::vector<uint8_t> buffer(sizeIn);
+    std::vector<uint8_t> buffer((uint8_t*)bufferPtrIn, ((uint8_t*)bufferPtrIn)+sizeIn);
 
-        // Decode the buffer
-      size_t outsize;
-        char* outbuffer = decodeBuffer<BareFormat, ChargeSumMode, RDHv4>(buffer, outsize);
+    // Decode the buffer
+    size_t outsize;
+    char* outbuffer = decoder.decodeBuffer(buffer, outsize);
 
-      
+
 
     /// send the output buffer via DPL
 
@@ -100,43 +77,29 @@ class DigitReaderTask
 
     // create the output message
     auto freefct = [](void* data, void* /*hint*/) { free(data); };
-    pc.outputs().adoptChunk(Output{ "MCH", "DIGITS" }, (char*)outbuffer, OUT_SIZE, freefct, nullptr);
+    pc.outputs().adoptChunk(Output{ "MCH", "DIGITS", 0 }, (char*)outbuffer, OUT_SIZE, freefct, nullptr);
+    //exit(0);
   }
 
- private:
+private:
   std::ifstream mInputFile{}; ///< input file
   bool mPrint = false;        ///< print digits
-  
-};
 
-//_________________________________________________________________________________________________
-o2::framework::DataProcessorSpec getDigitReaderSpec()
-{
-  return DataProcessorSpec{
-    "DigitReader",
-    Inputs{InputSpec{"readout", "ROUT", "RAWDATA", Lifetime::Timeframe}},
-    Outputs{OutputSpec{"MCH", "DIGITS", 0, Lifetime::Timeframe}},
-    AlgorithmSpec{ adaptFromTask<DigitReaderTask>() },
-    Options{ { "infile", VariantType::String, "data.raw", { "input file name" } } }
-  };
-}
+};
 
 // clang-format off
 WorkflowSpec defineDataProcessing(const ConfigContext&)
 {
   WorkflowSpec specs;
 
-  // The producer to generate some data in the workflow
-    
-    // Outputs{ { { "digits" }, { "MCH", "DIGITS" } } },
-    
   DataProcessorSpec producer{
-    "DigitReader",
-    Inputs{InputSpec{"readout", "ROUT", "RAWDATA", Lifetime::Timeframe}},
+    "DataDecoder",
+    //Inputs{InputSpec{"readout", "ROUT", "RAWDATA", Lifetime::Timeframe}},
+    o2::framework::select("readout:ROUT/RAWDATA"),
     Outputs{OutputSpec{"MCH", "DIGITS", 0, Lifetime::Timeframe}},
-    AlgorithmSpec{adaptFromTask<DigitReaderTask>()},
-    Options{ { "infile", VariantType::String, "", { "input digits" } } }
-      
+    AlgorithmSpec{adaptFromTask<DataDecoderTask>()},
+    Options{}
+
   };
   specs.push_back(producer);
 

@@ -34,9 +34,10 @@ bool Digit::operator==(const Digit& other) const
 
 
 //_________________________________________________________________
-std::ostream& operator<<(std::ostream& stream, const Digit& digit)
+std::ostream& operator<<(std::ostream& out, const Digit& digit)
 {
-  return stream;
+  out<<"deId "<<digit.getDetID()<<"  padId "<<digit.getPadID()<<"  time "<<digit.getTimeStamp()<<"  charge "<<digit.getADC();
+  return out;
 }
 
 } // namespace o2::mch

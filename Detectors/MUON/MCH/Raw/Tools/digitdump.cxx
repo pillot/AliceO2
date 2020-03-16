@@ -32,7 +32,7 @@
 #include <optional>
 #include <cstdint>
 #include "Framework/DataProcessorSpec.h"
-#include "Handlers.h"
+#include "RawBufferDecoder.h"
 #include "DumpOptionsAndStat.h"
 
 namespace po = boost::program_options;
@@ -61,9 +61,10 @@ void digitdump(std::string input, DumpOptions opt)
   size_t npages{0};
   size_t outsize;
 
+  RawBufferDecoder<FORMAT, CHARGESUM, RDH> decoder;
   while (npages < opt.maxNofRDHs() && in.read(reinterpret_cast<char*>(&buffer[0]), pageSize)) {
     npages++;
-    char* outbuffer = decodeBuffer<FORMAT, CHARGESUM, RDH>(buffer, outsize);
+    char* outbuffer = decoder.decodeBuffer(buffer, outsize);
   }
     
   return;
