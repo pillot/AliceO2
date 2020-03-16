@@ -234,6 +234,15 @@ void BareElinkDecoder<CHARGESUM>::handleHeader()
 {
   assert(mState == State::LookingForHeader);
 
+  // check if the current 50-bit word is a SYNC, and skip it if that's the case
+  const uint64_t sync = sampaSync().uint64();
+  if (mBitBuffer == sync) {
+    mNofSync++;
+    softReset();
+    return;
+  }
+
+
   mSampaHeader.uint64(mBitBuffer);
 
   ++mNofHeaderSeen;
