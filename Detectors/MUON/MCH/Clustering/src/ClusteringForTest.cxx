@@ -199,8 +199,8 @@ Clustering::Cluster Clustering::FinderCOG(std::vector<Digit> &precluster)
                }
                if ( multiplicity[cathode] != 0 )
                {
-                 xsize[cathode] /= multiplicity[cathode];
-                 ysize[cathode] /= multiplicity[cathode];
+                 xsize[cathode] /= (multiplicity[cathode]*sqrt(charge[cathode]));
+                 ysize[cathode] /= (multiplicity[cathode]*sqrt(charge[cathode]));
                }
                 else if( multiplicity[cathode] == 0)
                 {
@@ -217,6 +217,7 @@ Clustering::Cluster Clustering::FinderCOG(std::vector<Digit> &precluster)
             cout << "ysize:" << ysize[cathode] << endl;
             cout << "Multiplicity:" << multiplicity[cathode] << endl;
         }
+        
     }
     
 
