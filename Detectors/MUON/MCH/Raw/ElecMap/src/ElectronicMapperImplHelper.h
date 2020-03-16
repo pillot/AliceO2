@@ -71,12 +71,12 @@ std::function<std::optional<uint16_t>(CruLinkId)>
     auto it = cruLink2solar.find(encode(id));
   //    auto crid = decodeCruLinkId(94240813);
      // std::cout << "The decoding of 94240813 would give cruid " << int(crid.cruId()) << " deid " << int(crid.deId()) << " linkid " << int(crid.linkId()) << std::endl;
-      std::cout << "encode(CruLinkId) = " << encode(id) << std::endl;
+  //    std::cout << "encode(CruLinkId) = " << encode(id) << std::endl;
     if (it == cruLink2solar.end()) {
         std::cout << "[mapperCruLink2Solar] it == cruLink2solar.end() - Solar not found from CruLinkId" << std::endl;
       return std::nullopt;
     }
-      std::cout << "[mapperCruLink2Solar] it->second - Solar found from CruLinkId" << std::endl;
+    //std::cout << "[mapperCruLink2Solar] it->second - Solar found from CruLinkId" << std::endl;
     return it->second;
   };
 }
