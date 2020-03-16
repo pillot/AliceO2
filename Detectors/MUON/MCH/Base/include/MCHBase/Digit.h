@@ -16,6 +16,7 @@
 #ifndef ALICEO2_MCH_BASE_DIGIT_H_
 #define ALICEO2_MCH_BASE_DIGIT_H_
 
+#include <iostream>
 #include "Rtypes.h"
 
 namespace o2
