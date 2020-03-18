@@ -9,6 +9,9 @@
 // or submit itself to any jurisdiction.
 
 #include <fstream>
+#include "TCanvas.h"
+#include "TH1F.h"
+#include "TApplication.h"
 
 #include "MCHBase/Digit.h"
 //#include "MCHBase/DigitBlock.h"
@@ -22,10 +25,17 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
+    
   TBDigitsFileReader digitsReader(argv[1]);
   PreClusterFinder preClusterFinder;
   PreClusterBlock preClusterBlock;
   Clustering clustering;
+  std::vector<float> residuals;
+    
+    TApplication app ("app",&argc,argv);
+    
+    TCanvas *cbell = new TCanvas("cbell","Bell",0,0,600,600);
+    TH1F *h1 = new TH1F("h1", "Residuals distribution from TB data", 50, -0.1, 0.1);
   
   std::string fname;
   preClusterFinder.init(fname);
@@ -71,12 +81,25 @@ int main(int argc, char** argv)
 
       // Fit Mathieson
       clustering.runFinderSimpleFit(preClusters, clusters);
-      float yobtenu = clusters[0].gety();
-      float difference = ytrk-yobtenu;
-      cout << "RESIDUAL y: " << difference <<endl;
+
       
+      if(preClusters.size()==1){
+          float yobtenu = clusters[0].gety();
+          float difference = ytrk-yobtenu;
+          h1->Fill(difference);
+            h1->GetXaxis()->SetTitle("Residual y (cm)");
+            h1->GetYaxis()->SetTitle("Count");
+            h1->Draw();
+          cout << "RESIDUAL y: " << difference <<endl;
+
+      }
+
     //break;
   }
+    
+    cbell->Update();
+    cbell->Draw();
+              app.Run(kTRUE);
 
   return 0;
 }
