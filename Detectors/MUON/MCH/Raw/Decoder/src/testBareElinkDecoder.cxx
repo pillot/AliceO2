@@ -27,7 +27,7 @@ using ::operator<<;
 
 SampaChannelHandler handlePacketPrint(std::string_view msg)
 {
-  return [msg](DsElecId dsId, uint8_t channel, SampaCluster sc) {
+  return [msg](DsCruId dsId, uint8_t channel, SampaCluster sc) {
     std::stringstream s;
     s << dsId;
     std::cout << fmt::format("{} {} ch={:2d} ", msg, s.str(), channel);
@@ -44,12 +44,12 @@ BOOST_AUTO_TEST_CASE(Decoding10)
   int npackets{0};
   auto helper = handlePacketPrint("Decoding10:");
 
-  auto hp = [&npackets, helper](DsElecId dsId, uint8_t channel, SampaCluster sh) {
+  auto hp = [&npackets, helper](DsCruId dsId, uint8_t channel, SampaCluster sh) {
     npackets++;
     helper(dsId, channel, sh);
   };
 
-  BareElinkDecoder<SampleMode> e(DsElecId{0, 0, 0}, hp);
+  BareElinkDecoder<SampleMode> e(DsCruId{0, 0, 0}, hp);
 
   std::string enc("1100100010000000000011110000001010101010101010101011111010011100000000000010000000000000000000000000100000000000101000000010100000010000100100100000000000101000000000000000000000000100000000001001100000100110001010011000111110100110100000000000101100000000000000000000001100000000001000001000100000101010000010011000001001001000010110000000000011111000000000000000000000001000000000110110010011011001101101100101110110011111011001");
 
@@ -65,12 +65,12 @@ BOOST_AUTO_TEST_CASE(Decoding20)
   int npackets{0};
   auto helper = handlePacketPrint("Decoding20:");
 
-  auto hp = [&npackets, helper](DsElecId dsId, uint8_t channel, SampaCluster sh) {
+  auto hp = [&npackets, helper](DsCruId dsId, uint8_t channel, SampaCluster sh) {
     npackets++;
     helper(dsId, channel, sh);
   };
 
-  BareElinkDecoder<ChargeSumMode> e(DsElecId{0, 0, 0}, hp);
+  BareElinkDecoder<ChargeSumMode> e(DsCruId{0, 0, 0}, hp);
   std::string enc("11001000100000000000111100000010101010101010101010110110100100100000000000100000000000000000000000001000000000001010000010100110000000000000010000100100100000000000101000000000000000000000001000000000001001100010011111100000000000000110100100100000000000101100000000000000000000001000000000001000001010000100101000000000110110100100100000000000111110000000000000000000001000000000001101100111011100001100000000");
 
   for (int i = 0; i < enc.size() - 1; i += 2) {
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(Decoding20)
   // same thing but with a decoder without a channel handler
   // so we don't "see" any packet in this case
   npackets = 0;
-  BareElinkDecoder<ChargeSumMode> e2(DsElecId{0, 0, 0}, nullptr);
+  BareElinkDecoder<ChargeSumMode> e2(DsCruId{0, 0, 0}, nullptr);
   for (int i = 0; i < enc.size() - 1; i += 2) {
     e2.append(enc[i] == 1, enc[i + 1] == 1);
   }

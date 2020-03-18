@@ -30,7 +30,7 @@ using namespace o2::mch::raw;
 
 SampaChannelHandler handlePacket(std::string& result)
 {
-  return [&result](DsElecId dsId, uint8_t channel, SampaCluster sc) {
+  return [&result](DsCruId dsId, uint8_t channel, SampaCluster sc) {
     result += fmt::format("{}-ch-{}-ts-{}-q", asString(dsId), channel, sc.timestamp);
     if (sc.isClusterSum()) {
       result += fmt::format("-{}", sc.chargeSum);
@@ -157,7 +157,7 @@ std::string testDecode(const std::vector<SampaCluster>& clustersFirstChannel,
   uint8_t chip = 5;
   uint8_t ch = 31;
   uint8_t index = (chip - (ch > 32)) / 2;
-  DsElecId dsId{dummySolarId, dummyGroup, index};
+  DsCruId dsId{dummySolarId, dummyGroup, index};
   UserLogicElinkDecoder<CHARGESUM> dec(dsId, handlePacket(results));
   auto b64 = createBuffer(clustersFirstChannel, chip, ch, prefix, sync);
   if (clustersSecondChannel.size()) {

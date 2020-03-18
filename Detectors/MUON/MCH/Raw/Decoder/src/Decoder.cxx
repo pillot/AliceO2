@@ -17,28 +17,30 @@
 namespace o2::mch::raw
 {
 
-template <typename FORMAT, typename CHARGESUM>
-struct GBTDecoderTrait {
-  using type = void;
-};
+  template <typename FORMAT, typename CHARGESUM>
+  struct GBTDecoderTrait {
+    using type = void;
+  };
 
-template <typename CHARGESUM>
-struct GBTDecoderTrait<BareFormat, CHARGESUM> {
-  using type = BareGBTDecoder<CHARGESUM>;
-};
+  template <typename CHARGESUM>
+  struct GBTDecoderTrait<BareFormat, CHARGESUM> {
+    using type = BareGBTDecoder<CHARGESUM>;
+  };
 
-template <typename CHARGESUM>
-struct GBTDecoderTrait<UserLogicFormat, CHARGESUM> {
-  using type = UserLogicGBTDecoder<CHARGESUM>;
-};
+  template <typename CHARGESUM>
+  struct GBTDecoderTrait<UserLogicFormat, CHARGESUM> {
+    using type = UserLogicGBTDecoder<CHARGESUM>;
+  };
 
-template <typename FORMAT, typename CHARGESUM, typename RDH>
+template <typename CHARGESUM, typename RDH>
 Decoder createDecoder(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler channelHandler)
 {
-  using GBTDecoder = typename GBTDecoderTrait<FORMAT, CHARGESUM>::type;
-  using PAYLOADDECODER = PayloadDecoder<RDH, GBTDecoder>;
+  using BGBTDecoder = typename GBTDecoderTrait<BareFormat, CHARGESUM>::type;
+  using BPAYLOADDECODER = PayloadDecoder<RDH, BGBTDecoder>;
+  using ULGBTDecoder = typename GBTDecoderTrait<UserLogicFormat, CHARGESUM>::type;
+  using ULPAYLOADDECODER = PayloadDecoder<RDH, ULGBTDecoder>;
   return [rdhHandler, channelHandler](gsl::span<uint8_t> buffer) -> DecoderStat {
-    static PageParser<RDH, PAYLOADDECODER> mPageParser(rdhHandler, PAYLOADDECODER(channelHandler));
+    static PageParser<RDH, BPAYLOADDECODER, ULPAYLOADDECODER> mPageParser(rdhHandler, BPAYLOADDECODER(channelHandler), ULPAYLOADDECODER(channelHandler));
     return mPageParser.parse(buffer);
   };
 }
@@ -55,8 +57,6 @@ std::ostream& operator<<(std::ostream& out, const DecoderStat& decStat)
 
 using RDHv4 = o2::header::RAWDataHeaderV4;
 
-template Decoder createDecoder<BareFormat, SampleMode, RDHv4>(RawDataHeaderHandler<RDHv4>, SampaChannelHandler);
-template Decoder createDecoder<BareFormat, ChargeSumMode, RDHv4>(RawDataHeaderHandler<RDHv4>, SampaChannelHandler);
-template Decoder createDecoder<UserLogicFormat, SampleMode, RDHv4>(RawDataHeaderHandler<RDHv4>, SampaChannelHandler);
-template Decoder createDecoder<UserLogicFormat, ChargeSumMode, RDHv4>(RawDataHeaderHandler<RDHv4>, SampaChannelHandler);
+template Decoder createDecoder<SampleMode, RDHv4>(RawDataHeaderHandler<RDHv4>, SampaChannelHandler);
+template Decoder createDecoder<ChargeSumMode, RDHv4>(RawDataHeaderHandler<RDHv4>, SampaChannelHandler);
 } // namespace o2::mch::raw

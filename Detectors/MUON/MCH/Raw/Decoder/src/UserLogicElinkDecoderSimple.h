@@ -8,8 +8,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_BARE_ELINK_DECODER_H
-#define O2_MCH_RAW_BARE_ELINK_DECODER_H
+#ifndef O2_MCH_RAW_USER_LOGIC_ELINK_DECODER_SIMPLE_H
+#define O2_MCH_RAW_USER_LOGIC_ELINK_DECODER_SIMPLE_H
 
 #include "Assertions.h"
 #include "MCHRawCommon/DataFormats.h"
@@ -27,9 +27,21 @@
 namespace o2::mch::raw
 {
 
+  enum decode_state_t
+  {
+    DECODE_STATE_UNKNOWN,
+    DECODE_STATE_SYNC_FOUND,
+    DECODE_STATE_HEADER_FOUND,
+    DECODE_STATE_CSIZE_FOUND,
+    DECODE_STATE_CTIME_FOUND,
+    DECODE_STATE_SAMPLE_FOUND,
+    DECODE_STATE_PACKET_END
+  };
+
+
 /// @brief Main element of the MCH Bare Raw Data Format decoder.
 ///
-/// A BareElinkDecoder manages the bit stream for one Elink.
+/// A UserLogicElinkDecoder manages the bit stream for one Elink.
 ///
 /// Bits coming from parts of the GBT words are added to the Elink using the
 /// append() method and each time a SampaCluster is decoded,
@@ -38,7 +50,7 @@ namespace o2::mch::raw
 /// \nosubgrouping
 ///
 template <typename CHARGESUM>
-class BareElinkDecoder
+class UserLogicElinkDecoder
 {
  public:
   /// Constructor.
@@ -46,14 +58,14 @@ class BareElinkDecoder
   /// is connected  to
   /// \param sampaChannelHandler a callable that is passed
   /// each SampaCluster that will be decoded
-  BareElinkDecoder(DsCruId dsId, SampaChannelHandler sampaChannelHandler);
+  UserLogicElinkDecoder(DsCruId dsId, SampaChannelHandler sampaChannelHandler);
 
   /** @name Main interface 
   */
   ///@{
 
   /// Append two bits (from the same dual sampa, one per sampa) to the Elink.
-  void append(bool bit0, bool bit1);
+  void append(uint64_t data);
   ///@}
 
   // /// linkId is the GBT id this Elink is part of
@@ -83,7 +95,7 @@ class BareElinkDecoder
   };
 
   std::string name(State state) const;
-  void appendOneBit(bool bit);
+  void append10Bits(uint16_t data);
   void changeState(State newState, int newCheckpoint);
   void changeToReadingData();
   void clear(int checkpoint);
@@ -100,7 +112,7 @@ class BareElinkDecoder
   void softReset();
 
   template <typename T>
-  friend std::ostream& operator<<(std::ostream& os, const o2::mch::raw::BareElinkDecoder<T>& e);
+  friend std::ostream& operator<<(std::ostream& os, const o2::mch::raw::UserLogicElinkDecoder<T>& e);
 
  private:
   DsCruId mDsId;
@@ -112,7 +124,7 @@ class BareElinkDecoder
 
   ///@{
   uint64_t mNofSync;               //< Number of SYNC words we've seen so far
-  uint64_t mNofBitSeen;            //< Total number of bits seen
+  uint64_t mNof10BitSeen;          //< Total number of 10 bits seen
   uint64_t mNofHeaderSeen;         //< Total number of headers seen
   uint64_t mNofHammingErrors;      //< Total number of hamming errors seen
   uint64_t mNofHeaderParityErrors; //< Total number of header parity errors seen
@@ -128,86 +140,86 @@ class BareElinkDecoder
   uint64_t mMask;
 
   State mState; //< the state we are in
+
+  bool verbose;
 };
 
-constexpr int HEADERSIZE = 50;
-
-namespace
-{
-std::string bitBufferString(const std::bitset<50>& bs, int imax)
-{
-  std::string s;
-  for (int i = 0; i < 64; i++) {
-    if ((static_cast<uint64_t>(1) << i) > imax) {
-      break;
-    }
-    if (bs.test(i)) {
-      s += "1";
-    } else {
-      s += "0";
-    }
-  }
-  return s;
-}
-} // namespace
+constexpr int SAMPA_HEADERSIZE = 50;
 
 //FIXME: probably needs the GBT id as well here ?
 template <typename CHARGESUM>
-BareElinkDecoder<CHARGESUM>::BareElinkDecoder(DsCruId dsId,
+UserLogicElinkDecoder<CHARGESUM>::UserLogicElinkDecoder(DsCruId dsId,
                                               SampaChannelHandler sampaChannelHandler)
   : mDsId{dsId},
     mSampaChannelHandler{sampaChannelHandler},
     mSampaHeader{},
     mBitBuffer{},
     mNofSync{},
-    mNofBitSeen{},
+    mNof10BitSeen{},
     mNofHeaderSeen{},
     mNofHammingErrors{},
     mNofHeaderParityErrors{},
-    mCheckpoint{(static_cast<uint64_t>(1) << HEADERSIZE)},
+    mCheckpoint{SAMPA_HEADERSIZE},
     mNof10BitsWordsToRead{},
     mNofSamples{},
     mTimestamp{},
     mSamples{},
     mClusterSum{},
     mState{State::LookingForSync},
-    mMask{1}
+    mMask{0},
+    verbose(false)
 {
+      //if(dsId.elinkId() == 2) verbose = true;
+      //else verbose = false;
 }
 
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::appendOneBit(bool bit)
+void UserLogicElinkDecoder<CHARGESUM>::append10Bits(uint16_t data)
 {
-  mNofBitSeen++;
+  mNof10BitSeen++;
 
-  mBitBuffer += bit * mMask;
-  mMask *= 2;
+  mBitBuffer += static_cast<uint64_t>(data) << mMask;
+  mMask += 10;
 
+  //std::cout << fmt::format("[append10Bits] data={:08X} bitBuffer={:08X} mask={} checkpoint={}\n", data, mBitBuffer, mMask, mCheckpoint);
   if (mMask == mCheckpoint) {
     process();
   }
 }
 
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::append(bool bit0, bool bit1)
+void UserLogicElinkDecoder<CHARGESUM>::append(uint64_t data)
 {
-  appendOneBit(bit0);
-  appendOneBit(bit1);
+  int nch = (data >> 53) & 0x7FF;
+  int link_id = (data >> 59) & 0x1F;
+  int ds_id = (data >> 53) & 0x3F;
+  //if(link_id != 1) continue;
+  int is_incomplete = (data >> 52) & 0x1;
+  int err_code = (data >> 50) & 0x3;
+
+  append10Bits(data&0x3FF);       if(mState == State::LookingForHeader && is_incomplete ) return;
+  append10Bits((data>>10)&0x3FF); if(mState == State::LookingForHeader && is_incomplete ) return;
+  append10Bits((data>>20)&0x3FF); if(mState == State::LookingForHeader && is_incomplete ) return;
+  append10Bits((data>>30)&0x3FF); if(mState == State::LookingForHeader && is_incomplete ) return;
+  append10Bits((data>>40)&0x3FF); if(mState == State::LookingForHeader && is_incomplete ) return;
 }
 
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::changeState(State newState, int newCheckpoint)
+void UserLogicElinkDecoder<CHARGESUM>::changeState(State newState, int newCheckpoint)
 {
   mState = newState;
+  if(verbose)
+    std::cout << fmt::format("[changeState {}-{}] changed to ", mDsId.elinkGroupId(), mDsId.elinkIndexInGroup())
+  << name(mState) << fmt::format(", new checkpoint={}\n", newCheckpoint);
   clear(newCheckpoint);
 }
 
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::clear(int checkpoint)
+void UserLogicElinkDecoder<CHARGESUM>::clear(int checkpoint)
 {
   mBitBuffer = 0;
-  mCheckpoint = static_cast<uint64_t>(1) << checkpoint;
-  mMask = 1;
+  mCheckpoint = checkpoint;
+  mMask = 0;
 }
 
 /// findSync checks if the last 50 bits of the bit stream
@@ -216,23 +228,27 @@ void BareElinkDecoder<CHARGESUM>::clear(int checkpoint)
 /// - if they are then reset the bit stream and sets the checkpoint to 50 bits
 /// - if they are not then pop the first bit out
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::findSync()
+void UserLogicElinkDecoder<CHARGESUM>::findSync()
 {
   const uint64_t sync = sampaSync().uint64();
   assert(mState == State::LookingForSync);
+  if(verbose) std::cout << fmt::format("[findSync] bitBuffer={:08X} mask={} checkpoint={}\n", mBitBuffer, mMask, mCheckpoint);
   if (mBitBuffer != sync) {
-    mBitBuffer >>= 1;
-    mMask /= 2;
+    mBitBuffer >>= 10;
+    mMask -= 10;
     return;
   }
-  changeState(State::LookingForHeader, HEADERSIZE);
+  if(verbose) std::cout << fmt::format("[findSync] SYNC found\n");
+  changeState(State::LookingForHeader, SAMPA_HEADERSIZE);
   mNofSync++;
 }
 
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::handleHeader()
+void UserLogicElinkDecoder<CHARGESUM>::handleHeader()
 {
   assert(mState == State::LookingForHeader);
+
+  if(verbose) std::cout << fmt::format("[handleHeader] bitBuffer={:08X} mask={} checkpoint={}\n", mBitBuffer, mMask, mCheckpoint);
 
   // check if the current 50-bit word is a SYNC, and skip it if that's the case
   const uint64_t sync = sampaSync().uint64();
@@ -262,14 +278,11 @@ void BareElinkDecoder<CHARGESUM>::handleHeader()
       // so we fallthrough the simple Data case
     case SampaPacketType::Data:
       mNof10BitsWordsToRead = mSampaHeader.nof10BitWords();
+      if(verbose) std::cout << fmt::format("[handleHeader] data header found, nof10BitsWordsToRead={}\n", mNof10BitsWordsToRead);
       changeState(State::ReadingNofSamples, 10);
       break;
-    case SampaPacketType::Sync:
-      mNofSync++;
-      softReset();
-      break;
     case SampaPacketType::HeartBeat:
-      fmt::printf("BareElinkDecoder %d: HEARTBEAT found. Should be doing sth about it ?\n", mDsId);
+      fmt::printf("UserLogicElinkDecoder %d: HEARTBEAT found. Should be doing sth about it ?\n", mDsId);
       softReset();
       break;
     default:
@@ -279,7 +292,7 @@ void BareElinkDecoder<CHARGESUM>::handleHeader()
 }
 
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::handleReadClusterSum()
+void UserLogicElinkDecoder<CHARGESUM>::handleReadClusterSum()
 {
   mClusterSum = mBitBuffer;
   oneLess10BitWord();
@@ -288,12 +301,12 @@ void BareElinkDecoder<CHARGESUM>::handleReadClusterSum()
   if (mNof10BitsWordsToRead) {
     changeState(State::ReadingNofSamples, 10);
   } else {
-    changeState(State::LookingForHeader, HEADERSIZE);
+    changeState(State::LookingForHeader, SAMPA_HEADERSIZE);
   }
 }
 
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::handleReadData()
+void UserLogicElinkDecoder<CHARGESUM>::handleReadData()
 {
   assert(mState == State::ReadingTimestamp || mState == State::ReadingSample);
   if (mState == State::ReadingTimestamp) {
@@ -304,13 +317,15 @@ void BareElinkDecoder<CHARGESUM>::handleReadData()
 }
 
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::handleReadSample()
+void UserLogicElinkDecoder<CHARGESUM>::handleReadSample()
 {
   mSamples.push_back(mBitBuffer);
   if (mNofSamples > 0) {
     --mNofSamples;
   }
   oneLess10BitWord();
+  if(verbose) std::cout << fmt::format("[handleReadSample] mNofSamples={} mNof10BitsWordsToRead={} samples.size={}\n",
+      mNofSamples, mNof10BitsWordsToRead, mSamples.size());
   if (mNofSamples) {
     handleReadData();
   } else {
@@ -318,13 +333,13 @@ void BareElinkDecoder<CHARGESUM>::handleReadSample()
     if (mNof10BitsWordsToRead) {
       changeState(State::ReadingNofSamples, 10);
     } else {
-      changeState(State::LookingForHeader, HEADERSIZE);
+      changeState(State::LookingForHeader, SAMPA_HEADERSIZE);
     }
   }
 }
 
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::handleReadTimestamp()
+void UserLogicElinkDecoder<CHARGESUM>::handleReadTimestamp()
 {
   assert(mState == State::ReadingNofSamples);
   oneLess10BitWord();
@@ -333,13 +348,13 @@ void BareElinkDecoder<CHARGESUM>::handleReadTimestamp()
 }
 
 template <typename CHARGESUM>
-int BareElinkDecoder<CHARGESUM>::len() const
+int UserLogicElinkDecoder<CHARGESUM>::len() const
 {
   return static_cast<int>(std::floor(log2(1.0 * mMask)) + 1);
 }
 
 template <typename CHARGESUM>
-std::string BareElinkDecoder<CHARGESUM>::name(State s) const
+std::string UserLogicElinkDecoder<CHARGESUM>::name(State s) const
 {
   switch (s) {
     case State::LookingForSync:
@@ -364,7 +379,7 @@ std::string BareElinkDecoder<CHARGESUM>::name(State s) const
 }
 
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::oneLess10BitWord()
+void UserLogicElinkDecoder<CHARGESUM>::oneLess10BitWord()
 {
   if (mNof10BitsWordsToRead > 0) {
     --mNof10BitsWordsToRead;
@@ -373,8 +388,9 @@ void BareElinkDecoder<CHARGESUM>::oneLess10BitWord()
 
 /// process the bit stream content.
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::process()
+void UserLogicElinkDecoder<CHARGESUM>::process()
 {
+  if(verbose) std::cout << fmt::format("[process {}-{}] bitBuffer={:08X} state=", mDsId.elinkGroupId(), mDsId.elinkIndexInGroup(), mBitBuffer) << name(mState) << std::endl;
   switch (mState) {
     case State::LookingForSync:
       findSync();
@@ -398,20 +414,20 @@ void BareElinkDecoder<CHARGESUM>::process()
 };
 
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::softReset()
+void UserLogicElinkDecoder<CHARGESUM>::softReset()
 {
-  clear(HEADERSIZE);
+  clear(SAMPA_HEADERSIZE);
 }
 
 template <typename CHARGESUM>
-void BareElinkDecoder<CHARGESUM>::reset()
+void UserLogicElinkDecoder<CHARGESUM>::reset()
 {
   softReset();
   mState = State::LookingForSync;
 }
 
 template <typename CHARGESUM>
-std::ostream& operator<<(std::ostream& os, const o2::mch::raw::BareElinkDecoder<CHARGESUM>& e)
+std::ostream& operator<<(std::ostream& os, const o2::mch::raw::UserLogicElinkDecoder<CHARGESUM>& e)
 {
   os << fmt::format("ID{:2d} cruId {:2d} sync {:6d} cp 0x{:6x} mask 0x{:6x} state {:17s} len {:6d} nseen {:6d} errH {:6} errP {:6} head {:6d} n10w {:6d} nsamples {:6d} mode {} bbuf {:s}",
                     e.mLinkId, e.mCruId, e.mNofSync, e.mCheckpoint, e.mMask,
@@ -427,13 +443,13 @@ std::ostream& operator<<(std::ostream& os, const o2::mch::raw::BareElinkDecoder<
   return os;
 }
 
-uint8_t channelNumber(const SampaHeader& sh)
-{
-  return sh.channelAddress() + (sh.chipAddress() % 2) * 32;
-}
+//uint8_t channelNumber(const SampaHeader& sh)
+//{
+//  return sh.channelAddress() + (sh.chipAddress() % 2) * 32;
+//}
 
 template <>
-void BareElinkDecoder<ChargeSumMode>::sendCluster()
+void UserLogicElinkDecoder<ChargeSumMode>::sendCluster()
 {
   if (mSampaChannelHandler) {
     mSampaChannelHandler(mDsId,
@@ -443,7 +459,7 @@ void BareElinkDecoder<ChargeSumMode>::sendCluster()
 }
 
 template <>
-void BareElinkDecoder<SampleMode>::sendCluster()
+void UserLogicElinkDecoder<SampleMode>::sendCluster()
 {
   if (mSampaChannelHandler) {
     mSampaChannelHandler(mDsId,
@@ -454,13 +470,13 @@ void BareElinkDecoder<SampleMode>::sendCluster()
 }
 
 template <>
-void BareElinkDecoder<ChargeSumMode>::changeToReadingData()
+void UserLogicElinkDecoder<ChargeSumMode>::changeToReadingData()
 {
   changeState(State::ReadingClusterSum, 20);
 }
 
 template <>
-void BareElinkDecoder<SampleMode>::changeToReadingData()
+void UserLogicElinkDecoder<SampleMode>::changeToReadingData()
 {
   changeState(State::ReadingSample, 10);
 }
