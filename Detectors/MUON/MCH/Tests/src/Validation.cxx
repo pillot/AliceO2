@@ -144,26 +144,26 @@ void Validation::PlotMathieson2D(Double_t x, Double_t y, int nsamples){
         hb->AddBinContent(bin, noise);
     }
     
-    TCanvas *c2 = new TCanvas("c2", "The road to PlotDorado",
-                              200,10,600,400);
-    c2->Divide(1,2);
-    c2->cd(1);
-    
-    hb->SetTitle("Mathieson 2D Distribution - Bending plane - DE819");
-    hb->Draw("LEGO2");
-    
-    c2->Update();
-    c2->Draw();
-    
-    TCanvas *c3 = new TCanvas("c3", "The road to PlotDorado",
-    200,10,600,400);
-    c3->Divide(1,2);
-    c3->cd(1);
-    
-    hb->Draw("colz");
-
-    c3->Update();
-    c3->Draw();
+//    TCanvas *c2 = new TCanvas("c2", "The road to PlotDorado",
+//                              200,10,600,400);
+//    c2->Divide(1,2);
+//    c2->cd(1);
+//
+//    hb->SetTitle("Mathieson 2D Distribution - Bending plane - DE819");
+//    hb->Draw("LEGO2");
+//
+//    c2->Update();
+//    c2->Draw();
+//
+//    TCanvas *c3 = new TCanvas("c3", "The road to PlotDorado",
+//    200,10,600,400);
+//    c3->Divide(1,2);
+//    c3->cd(1);
+//
+//    hb->Draw("colz");
+//
+//    c3->Update();
+//    c3->Draw();
     
     //Création et remplissage histogrammes non-bending
     
@@ -175,18 +175,18 @@ void Validation::PlotMathieson2D(Double_t x, Double_t y, int nsamples){
         hnb->AddBinContent(bin, noise);
     }
     
-    c2->cd(2);
-    hnb->SetTitle("Mathieson 2D Distribution - Non-Bending plane - DE819");
-    hnb->Draw("LEGO2");
-
-    c2->Update();
-    c2->Draw();
-    
-    c3->cd(2);
-    hnb->Draw("colz");
-
-    c3->Update();
-    c3->Draw();
+//    c2->cd(2);
+//    hnb->SetTitle("Mathieson 2D Distribution - Non-Bending plane - DE819");
+//    hnb->Draw("LEGO2");
+//
+//    c2->Update();
+//    c2->Draw();
+//
+//    c3->cd(2);
+//    hnb->Draw("colz");
+//
+//    c3->Update();
+//    c3->Draw();
     
     
     int nbbinsb = (lowxsb.size()-1)*(lowysb.size()-1);
@@ -545,7 +545,7 @@ std::vector<Clustering::Cluster> Validation::TestClustering(){
     
     
     //To run Double Gaussian fit Clustering
- //   clustering.runFinderDoubleGaussianFit(preClusters, clusters);
+  //  clustering.runFinderDoubleGaussianFit(preClusters, clusters);
     
     delete digitsBuffer;
     delete preClustersBuffer;
@@ -713,6 +713,49 @@ void ResidualsPlot(double yarray[], double resyfound[], double eyfound[], int si
     cbell->Draw();
     
 }
+
+void PlotWidthWrtCharge(){
+    
+    const Int_t n = 8;
+    
+    Double_t chginput[n]  = {20, 50, 100, 200, 500, 1000, 2000, 5000};
+    Double_t echginput[n] = {0, 0, 0, 0, 0, 0, 0, 0};
+    Double_t widthMathieson[n]  = {0.0724216, 0.0473039, 0.0237125, 0.0195968, 0.0136211, 0.00922341, 0.00550195, 0.00424860};
+    Double_t ewidthMathieson[n] = {0.00823728, 0.00253988, 0.000958042, 0.000588419, 0.000349494, 0.000168508, 0.0000935699, 0.0000546348};
+    Double_t widthDoubleGauss[n]  = {0.0809867, 0.0405142, 0.0245105, 0.0198315, 0.0130453, 0.00867564, 0.00585070, 0.00422690};
+    Double_t ewidthDoubleGauss[n] = {0.0110478, 0.00196554, 0.000973368, 0.000605342, 0.000327329, 0.000196655, 0.0000988013, 0.0000564364};
+    
+    TCanvas *cerr = new TCanvas("cerr","width wrt charge",0,0,600,600);
+    
+    TGraphErrors *gr2 = new TGraphErrors(n, chginput, widthMathieson, echginput, ewidthMathieson);
+    gr2->SetTitle("Residuals width wrt charge of clusters");
+    gr2->SetMarkerColor(4);
+    gr2->SetLineColor(4);
+    gr2->SetMarkerStyle(8);
+    gr2->GetXaxis()->SetTitle("charge of a cluster (ADC)");
+    gr2->GetYaxis()->SetTitle("Residual width (cm)");
+    gr2->Draw("AP");
+    
+    TGraphErrors *gr3 = new TGraphErrors(n, chginput, widthDoubleGauss, echginput, ewidthDoubleGauss);
+     gr3->SetMarkerColor(2);
+     gr3->SetLineColor(2);
+     gr3->SetMarkerStyle(8);
+    gr3->Draw("P SAME");
+    
+    auto legend = new TLegend(0.7,0.7,0.9,0.9);
+                    legend->SetHeader("Clustering procedures"); // option "C" allows to center the header
+                    legend->AddEntry(gr2,"Mathieson fit, K3 AliRoot","lep");
+                    legend->AddEntry(gr3, "Double Gaussian fit, K3 AliRoot","lep");
+                    legend->Draw();
+    
+    cerr->SetLogx(true);
+    cerr->SetLogy(true);
+    cerr->Update();
+    cerr->Draw();
+    
+    
+}
+
 
 }
 }

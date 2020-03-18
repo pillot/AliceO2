@@ -32,6 +32,7 @@ void myMath2hits(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t ch
 void ResidualsCOG();
 void ResidualsCompare();
 void ResidualsPlot(double yarray[], double resyfound[], double eyfound[], const int size);
+void PlotWidthWrtCharge();
 
 class Validation
 {
