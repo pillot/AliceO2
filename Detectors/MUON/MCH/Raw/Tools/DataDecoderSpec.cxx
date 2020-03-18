@@ -40,8 +40,7 @@ using namespace o2::framework;
 
 class DataDecoderTask
 {
-  RawBufferDecoder<BareFormat, SampleMode, RDHv4> decoder;
-  //RawBufferDecoder<UserLogicFormat, SampleMode, RDHv4> decoder;
+  RawBufferDecoder<SampleMode, RDHv4> decoder;
 
 public:
   //_________________________________________________________________________________________________

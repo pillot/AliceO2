@@ -46,7 +46,7 @@ using RDHv4 = o2::header::RAWDataHeaderV4;
     //  Récupère un fichier sur l'ordinateur et utilise le bout de code de base decodeBuffer pour décoder
     
     
-template <typename FORMAT, typename CHARGESUM, typename RDH>
+template <typename CHARGESUM, typename RDH>
 void digitdump(std::string input, DumpOptions opt)
 {
   std::ifstream in(input.c_str(), std::ios::binary);
@@ -61,7 +61,7 @@ void digitdump(std::string input, DumpOptions opt)
   size_t npages{0};
   size_t outsize;
 
-  RawBufferDecoder<FORMAT, CHARGESUM, RDH> decoder;
+  RawBufferDecoder<CHARGESUM, RDH> decoder(true);
   while (npages < opt.maxNofRDHs() && in.read(reinterpret_cast<char*>(&buffer[0]), pageSize)) {
     npages++;
     char* outbuffer = decoder.decodeBuffer(buffer, outsize);
@@ -121,18 +121,10 @@ int main(int argc, char* argv[])
   if (vm.count("cru")) {
     opt.cruId(vm["cru"].as<uint16_t>());
   }
-  if (userLogic) {
-    if (chargeSum) {
-      digitdump<UserLogicFormat, ChargeSumMode, RDHv4>(inputFile, opt);
-    } else {
-      digitdump<UserLogicFormat, SampleMode, RDHv4>(inputFile, opt);
-    }
+  if (chargeSum) {
+    digitdump<ChargeSumMode, RDHv4>(inputFile, opt);
   } else {
-    if (chargeSum) {
-      digitdump<BareFormat, ChargeSumMode, RDHv4>(inputFile, opt);
-    } else {
-      digitdump<BareFormat, SampleMode, RDHv4>(inputFile, opt);
-    }
+    digitdump<SampleMode, RDHv4>(inputFile, opt);
   }
 
   return 0;
