@@ -28,14 +28,14 @@ CruLinkId::CruLinkId(uint16_t cruId, uint8_t linkId, uint16_t deId)
   impl::assertIsInRange("linkId", mLinkId, 0, 23);
 }
 
-uint32_t encode(const CruLinkId& id)
+uint16_t encode(const CruLinkId& id)
 {
       //  std::cout << "[CruLinkId - Encode] (id.cruId() << 5) | id.linkId() with id.cruId() = " << id.cruId() << " and id.linkId() = " << id.linkId() << std::endl;
   return (id.cruId() << 5) | id.linkId();
     //(id.deId() << 17) | (id.cruId() << 5) | id.linkId();
 }
 
-CruLinkId decodeCruLinkId(uint32_t x)
+CruLinkId decodeCruLinkId(uint16_t x)
 {
   uint16_t cruId = static_cast<uint16_t>((x & 0x3FFE0) >> 5);
   uint16_t linkId = static_cast<uint8_t>(x & 0x1F);

@@ -21,7 +21,7 @@
 #include <boost/msm/front/state_machine_def.hpp>
 #include <fmt/format.h>
 #include <memory>
-#include "MCHRawElecMap/DsElecId.h"
+#include "MCHRawElecMap/DsCruId.h"
 
 namespace msm = boost::msm;
 namespace mpl = boost::mpl;
@@ -321,7 +321,7 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
   // masks used to access groups of 10 bits in a 50 bits range
   std::array<uint64_t, 5>
     masks = {0x3FF0000000000, 0xFFC0000000, 0x3FF00000, 0xFFC00, 0x3FF};
-  DsElecId dsId{0, 0, 0};
+  DsCruId dsId{0, 0, 0};
   uint16_t nof10BitWords{0};
   uint16_t clusterSize{0};
   uint16_t clusterTime{0};
@@ -337,7 +337,7 @@ template <typename CHARGESUM>
 class UserLogicElinkDecoder
 {
  public:
-  UserLogicElinkDecoder(DsElecId dsId, SampaChannelHandler sampaChannelHandler)
+  UserLogicElinkDecoder(DsCruId dsId, SampaChannelHandler sampaChannelHandler)
     : mFSM{}
   {
     mFSM.dsId = dsId;

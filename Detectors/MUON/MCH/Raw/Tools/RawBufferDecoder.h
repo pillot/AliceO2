@@ -16,7 +16,7 @@
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawDecoder/Decoder.h"
 #include "MCHRawElecMap/Mapper.h"
-#include "MCHMappingInterface/Segmentation.h"
+#include "MCHMappingFactory/CreateSegmentation.h"
 #include "MCHBase/DigitBlock.h"
 #include "MCHBase/Digit.h"
 #include "boost/program_options.hpp"
@@ -58,14 +58,15 @@ std::ostream& operator<<(std::ostream& os, const Stat& s)
 }
 
 
-template <typename FORMAT, typename CHARGESUM, typename RDH>
+template <typename CHARGESUM, typename RDH>
 class RawBufferDecoder
 {
   std::function<std::optional<DsDetId>(DsElecId)> Elec2Det;
   std::function<std::optional<uint16_t>(CruLinkId)> cruLink2solar;
+  bool verbose;
 public:
 
-  RawBufferDecoder()
+  RawBufferDecoder(bool v=false): verbose(v)
   {
     std::vector<int> deidspan;
     for(int i=0; i<deIdsForAllMCH.size(); i++){
@@ -78,7 +79,7 @@ public:
 
   char* decodeBuffer(std::vector<uint8_t> &buffer, size_t& outsize)
   {
-    bool verbose = false;
+    //bool verbose = false;
     gsl::span<uint8_t> sbuffer(buffer);
 
     outsize = 0;
@@ -86,12 +87,12 @@ public:
     size_t ndigits{0};
 
     std::vector< std::unique_ptr<o2::mch::Digit> > digits;
-    if(verbose) std::cout << "On nettoie le vector digits" << std::endl;
+    //if(verbose) std::cout << "On nettoie le vector digits" << std::endl;
 
 
-    auto channelHandler = [&](DsElecId dsId, uint8_t channel, o2::mch::raw::SampaCluster sc) {
+    auto channelHandler = [&](DsCruId dsId, uint8_t channel, o2::mch::raw::SampaCluster sc) {
       auto s = asString(dsId);
-      //channel = manu2ds(int(channel));
+      channel = manu2ds(int(channel));
       if(verbose) {
         auto ch = fmt::format("{}-CH{}", s, channel);
         std::cout << ch << std::endl;
@@ -102,22 +103,26 @@ public:
       }
 
 
-      //Attention on est dans une boucle
       int deId;
       int dsIddet;
-      if(auto opt = Elec2Det(dsId); opt.has_value()){
-        DsDetId dsDetId = Elec2Det(dsId).value();
-        dsIddet = dsDetId.dsId();
-        deId = dsDetId.deId();
-      }
-      else{
+      auto cruId = o2::mch::raw::decodeCruLinkId(dsId.linkId());
+      if(auto solar = cruLink2solar(cruId); solar.has_value()) {
+        DsElecId dsElecId(solar.value(), dsId.elinkGroupId(), dsId.elinkIndexInGroup());
+        //Attention on est dans une boucle
+        if(auto opt = Elec2Det(dsElecId); opt.has_value()) {
+          DsDetId dsDetId = opt.value();
+          dsIddet = dsDetId.dsId();
+          deId = dsDetId.deId();
+        }
+      } else {
         dsIddet = 9999;
         deId = 819;
       }
 
       int padId = -1;
       try {
-        Segmentation segment(deId);
+        const Segmentation& segment = segmentation(deId);
+        //Segmentation segment(deId);
 
         padId = segment.findPadByFEE(dsIddet, int(channel));
         if(verbose)
@@ -148,19 +153,19 @@ public:
       auto r = rdh;
       auto cruId = r.cruID;
       auto linkId = rdhLinkId(r);
-      auto solar = cruLink2solar(o2::mch::raw::CruLinkId(cruId, linkId));
-      if (!solar.has_value()) {
-        std::cout << fmt::format("ERROR - Could not get solarUID from CRU,LINK=({},{})\n",
-            cruId, linkId);
-        return std::nullopt;
-      }
-      r.feeId = solar.value();
+      //auto solar = cruLink2solar(o2::mch::raw::CruLinkId(cruId, linkId));
+      //if (!solar.has_value()) {
+      //  std::cout << fmt::format("ERROR - Could not get solarUID from CRU,LINK=({},{})\n",
+      //      cruId, linkId);
+      //  return std::nullopt;
+      //}
+      r.feeId = cruId; //solar.value();
       if(verbose)
-        std::cout << "\n\n===============\nRDH INFO: CRUID " << cruId << " LINKID " << int(linkId) << std::endl;
+        std::cout << "\n\n===============\nRDH INFO: CRUID " << cruId << " LINKID " << int(linkId) << " ORBIT "<< rdhOrbit(rdh) << std::endl;
       return r;
     };
 
-    o2::mch::raw::Decoder decode = o2::mch::raw::createDecoder<FORMAT, CHARGESUM, RDH>(rdhHandler, channelHandler);
+    o2::mch::raw::Decoder decode = o2::mch::raw::createDecoder<CHARGESUM, RDH>(rdhHandler, channelHandler);
 
     std::vector<std::chrono::microseconds> timers;
 

@@ -32,8 +32,8 @@ class CruLinkId
   uint16_t mDeId;
 };
 
-CruLinkId decodeCruLinkId(uint32_t code);
-uint32_t encode(const CruLinkId& id);
+CruLinkId decodeCruLinkId(uint16_t code);
+uint16_t encode(const CruLinkId& id);
 
 std::ostream& operator<<(std::ostream& os, const CruLinkId& id);
 

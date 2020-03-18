@@ -8,8 +8,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "MCHRawElecMap/CruLinkId.h"
 #include "MCHRawElecMap/DsCruId.h"
-#include "MCHRawElecMap/DsElecId.h"
 #include "Assertions.h"
 #include <fmt/format.h>
 #include <iostream>
@@ -19,22 +19,22 @@
 
 namespace o2::mch::raw
 {
-DsElecId::DsElecId(uint16_t solarId, uint8_t elinkGroupId, uint8_t elinkIndex)
-  : mSolarId{solarId}, mElinkGroupId{elinkGroupId}, mElinkIndexInGroup{elinkIndex}
+DsCruId::DsCruId(uint16_t linkId, uint8_t elinkGroupId, uint8_t elinkIndex)
+  : mLinkId{linkId}, mElinkGroupId{elinkGroupId}, mElinkIndexInGroup{elinkIndex}
 {
   impl::assertIsInRange("elinkGroupId", mElinkGroupId, 0, 7);
   impl::assertIsInRange("elinkIndex", mElinkIndexInGroup, 0, 4);
 }
 
-uint16_t encode(const DsElecId& id)
+uint16_t encode(const DsCruId& id)
 {
-  return (id.solarId() & 0x3FF) | ((id.elinkGroupId() & 0x7) << 10) |
+  return (id.linkId() & 0x3FF) | ((id.elinkGroupId() & 0x7) << 10) |
          ((id.elinkIndexInGroup() & 0x7) << 13);
 }
 
-std::optional<DsElecId> decodeDsElecId(uint16_t code)
+std::optional<DsCruId> decodeDsCruId(uint16_t code)
 {
-  uint16_t solarId = code & 0x3FF;
+  uint16_t linkId = code & 0x3FF;
 
   uint8_t groupId = (code & 0x1C00) >> 10;
 
@@ -46,10 +46,10 @@ std::optional<DsElecId> decodeDsElecId(uint16_t code)
   if (index > 4) {
     return std::nullopt;
   }
-  return DsElecId(solarId, groupId, index);
+  return DsCruId(linkId, groupId, index);
 }
 
-std::optional<DsElecId> decodeDsElecId(std::string rep)
+std::optional<DsCruId> decodeDsCruId(std::string rep)
 {
   std::istringstream is(rep);
   std::string line;
@@ -58,11 +58,11 @@ std::optional<DsElecId> decodeDsElecId(std::string rep)
     tokens.emplace_back(line);
   }
   if (tokens.size() < 3) {
-    // not a valid representation of a DsElecId
+    // not a valid representation of a DsCruId
     return std::nullopt;
   }
   if (tokens[0].empty() || tokens[0][0] != 'S') {
-    // token[0] is not a valid representation of a solarId
+    // token[0] is not a valid representation of a linkId
     return std::nullopt;
   }
   if (tokens[1].empty() || tokens[1][0] != 'J') {
@@ -73,52 +73,25 @@ std::optional<DsElecId> decodeDsElecId(std::string rep)
     // token is not a valid representation of a DS
     return std::nullopt;
   }
-  uint16_t solarId = std::atoi(tokens[0].substr(1).c_str());
+  uint16_t linkId = std::atoi(tokens[0].substr(1).c_str());
   uint8_t groupId = std::atoi(tokens[1].substr(1).c_str());
   uint8_t index = std::atoi(tokens[2].substr(2).c_str());
-  return DsElecId(solarId, groupId, index);
+  return DsCruId(linkId, groupId, index);
 }
 
-std::optional<uint8_t> decodeChannelId(std::string rep)
+std::ostream& operator<<(std::ostream& os, const DsCruId& id)
 {
-  auto dsElecId = decodeDsElecId(rep);
-  if (!dsElecId.has_value()) {
-    // must be a valid dsElecId
-    return std::nullopt;
-  }
-  std::istringstream is(rep);
-  std::string line;
-  std::vector<std::string> tokens;
-  while (getline(is, line, '-')) {
-    tokens.emplace_back(line);
-  }
-  if (tokens.size() < 4) {
-    // not a valid representation of a {DsElecId,ChannelId}
-    return std::nullopt;
-  }
-  if (tokens[3].size() < 3 || tokens[3][0] != 'C' || tokens[3][1] != 'H') {
-    // token[3] is not a valid representation of a CH
-    return std::nullopt;
-  }
-  auto chId = std::atoi(tokens[3].substr(2).c_str());
-  if (chId >= 0 && chId <= 63) {
-    return chId;
-  }
-  return std::nullopt;
-}
-
-std::ostream& operator<<(std::ostream& os, const DsElecId& id)
-{
-  std::cout << fmt::format("DsElecId(SOLAR=S{:4d} GROUP=J{:2d} INDEX=DS{:2d}) CODE={:8d}",
-                           id.solarId(), id.elinkGroupId(), id.elinkIndexInGroup(), encode(id));
+  std::cout << fmt::format("DsCruId(SOLAR=S{:4d} GROUP=J{:2d} INDEX=DS{:2d}) CODE={:8d}",
+                           id.linkId(), id.elinkGroupId(), id.elinkIndexInGroup(), encode(id));
   return os;
 }
 
-std::string asString(DsElecId dsId)
+std::string asString(DsCruId dsId)
 {
-  return fmt::format("S{}-J{}-DS{}", dsId.solarId(), dsId.elinkGroupId(), dsId.elinkIndexInGroup());
+  CruLinkId cruLinkId(decodeCruLinkId(dsId.linkId()));
+  return fmt::format("C{}-L{}-J{}-DS{}", cruLinkId.cruId(), cruLinkId.linkId(), dsId.elinkGroupId(), dsId.elinkIndexInGroup());
 }
-/*
+
 std::optional<uint8_t> groupFromElinkId(uint8_t elinkId)
 {
   if (elinkId < 40) {
@@ -134,5 +107,4 @@ std::optional<uint8_t> indexFromElinkId(uint8_t elinkId)
   }
   return std::nullopt;
 }
-*/
 } // namespace o2::mch::raw

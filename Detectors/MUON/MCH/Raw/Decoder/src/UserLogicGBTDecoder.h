@@ -12,7 +12,8 @@
 #define O2_MCH_RAW_USERLOGIC_GBT_DECODER_H
 
 #include <array>
-#include "UserLogicElinkDecoder.h"
+//#include "UserLogicElinkDecoder.h"
+#include "UserLogicElinkDecoderSimple.h"
 #include "MCHRawDecoder/SampaChannelHandler.h"
 #include <gsl/span>
 #include "UserLogicGBTDecoder.h"
@@ -34,9 +35,9 @@ class UserLogicGBTDecoder
  public:
   static constexpr uint8_t baseSize{64};
   /// Constructor.
-  /// \param solarId
+  /// \param linkId
   /// \param sampaChannelHandler the callable that will handle each SampaCluster
-  UserLogicGBTDecoder(uint16_t solarId, SampaChannelHandler sampaChannelHandler);
+  UserLogicGBTDecoder(uint16_t linkId, SampaChannelHandler sampaChannelHandler);
 
   /** @name Main interface 
     */
@@ -60,8 +61,10 @@ class UserLogicGBTDecoder
   ///@}
 
  private:
-  int mSolarId;
-  std::array<UserLogicElinkDecoder<CHARGESUM>, 40> mElinkDecoders;
+  int mLinkId;
+  int mCruId;
+  SampaChannelHandler mChannelHandler;
+  std::map<uint16_t, std::array<UserLogicElinkDecoder<CHARGESUM>, 40>> mElinkDecoders;
   int mNofGbtWordsSeens;
 };
 
@@ -69,16 +72,19 @@ using namespace o2::mch::raw;
 using namespace boost::multiprecision;
 
 template <typename CHARGESUM>
-UserLogicGBTDecoder<CHARGESUM>::UserLogicGBTDecoder(uint16_t solarId,
+UserLogicGBTDecoder<CHARGESUM>::UserLogicGBTDecoder(uint16_t linkId,
                                                     SampaChannelHandler sampaChannelHandler)
-  : mSolarId{solarId},
-    mElinkDecoders{
-      impl::makeArray<40>([=](size_t i) {
-        return UserLogicElinkDecoder<CHARGESUM>(DsElecId{solarId, static_cast<uint8_t>(i / 8), static_cast<uint8_t>(i % 5)}, sampaChannelHandler);
-      })} // namespace o2::mch::raw
-    ,
+  : mLinkId{linkId},
+    mChannelHandler(sampaChannelHandler),
+    //mElinkDecoders{
+    //  impl::makeArray<40>([=](size_t i) {
+    //    return UserLogicElinkDecoder<CHARGESUM>(DsCruId{linkId, static_cast<uint8_t>(i / 8), static_cast<uint8_t>(i % 5)}, sampaChannelHandler);
+    //  })} // namespace o2::mch::raw
+    //,
     mNofGbtWordsSeens{0}
 {
+  auto c = decodeCruLinkId(linkId);
+  mCruId = c.cruId();
 }
 
 template <typename CHARGESUM>
@@ -106,18 +112,35 @@ size_t UserLogicGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> buffer)
     if (word == 0xFEEDDEEDFEEDDEED) {
       continue;
     }
+
+    // Get the GBT link associated to this word
     int gbt = (word >> 59) & 0x1F;
-    if (gbt != mSolarId) {
-      std::cout << fmt::format("warning : solarId {} != expected {} word={:08X}\n", gbt, mSolarId, word);
+    if (gbt < 0 || gbt > 11) {
+      std::cout << fmt::format("warning : out-of-range linkId {} word={:08X}\n", gbt, word);
       // throw std::invalid_argument(fmt::format("gbt {} != expected {} word={:X}\n", gbt, mGbtId, word));
+    }
+
+    // Compute the CRU link ID
+    uint16_t lid = encode(CruLinkId(mCruId, gbt));
+
+    // Get the corresponding decoders array, or allocate it if not existing yet
+    auto d = mElinkDecoders.find(gbt);
+    if(d == mElinkDecoders.end()) {
+      mElinkDecoders.emplace(static_cast<uint16_t>(gbt),
+          impl::makeArray<40>([=](size_t i) {
+        return UserLogicElinkDecoder<CHARGESUM>(DsCruId{lid, static_cast<uint8_t>(i / 5), static_cast<uint8_t>(i % 5)}, mChannelHandler);
+      }));
+      d = mElinkDecoders.find(gbt);
     }
 
     uint16_t dsid = (word >> 53) & 0x3F;
     impl::assertIsInRange("dsid", dsid, 0, 39);
 
+    //std::cout << fmt::format("CRU={} linkId={} DS={} word={:08X}\n", mCruId, gbt, dsid, word);
+
     // the remaining 50 bits are passed to the ElinkDecoder
     uint64_t data = word & UINT64_C(0x003FFFFFFFFFFFFF);
-    mElinkDecoders.at(dsid).append(data);
+    d->second.at(dsid).append(data);
     n += 8;
   }
   return n;

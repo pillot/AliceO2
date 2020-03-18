@@ -8,8 +8,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ELECMAP_DS_ELEC_ID_H
-#define O2_MCH_RAW_ELECMAP_DS_ELEC_ID_H
+#ifndef O2_MCH_RAW_ELECMAP_DS_CRU_ID_H
+#define O2_MCH_RAW_ELECMAP_DS_CRU_ID_H
 
 #include <cstdint>
 #include <iosfwd>
@@ -17,12 +17,12 @@
 
 namespace o2::mch::raw
 {
-/// A DsElecId is a tuple (solar,group,index) that identifies
-/// a dual sampa from the electronic point of view.
-class DsElecId
+/// A DsCruId is a tuple (cruLink,group,index) that identifies
+/// a dual sampa from the CRU point of view.
+class DsCruId
 {
  public:
-  explicit DsElecId(uint16_t solarId, uint8_t elinkGroupId, uint8_t elinkIndex);
+  explicit DsCruId(uint16_t linkId, uint8_t elinkGroupId, uint8_t elinkIndex);
 
   /// The eLinkIndexInGroup is a number between 0 and 4
   /// and represents the index of a dual sampa within a given flex (aka group)
@@ -46,55 +46,55 @@ class DsElecId
   }
 
   /// solarId is an identifier that uniquely identify a solar board
-  constexpr uint16_t solarId() const
+  constexpr uint16_t linkId() const
   {
-    return mSolarId;
+    return mLinkId;
   }
 
-  bool operator==(const DsElecId& rhs)
+  bool operator==(const DsCruId& rhs)
   {
-    return mSolarId == rhs.mSolarId &&
+    return mLinkId == rhs.mLinkId &&
            mElinkIndexInGroup == rhs.mElinkIndexInGroup &&
            mElinkGroupId == rhs.mElinkGroupId;
   }
-  bool operator!=(const DsElecId& rhs)
+  bool operator!=(const DsCruId& rhs)
   {
     return !(*this == rhs);
   }
 
  private:
-  uint16_t mSolarId;
+  uint16_t mLinkId;           // [0..63] * [0..11]
   uint8_t mElinkGroupId;      // 0..7
   uint8_t mElinkIndexInGroup; // 0..4
 };
 
-uint16_t encode(const DsElecId& id);
+uint16_t encode(const DsCruId& id);
 
-/// Creates (if possible) a DsElecId object from a code.
+/// Creates (if possible) a DsCruId object from a code.
 /// If the code does not correspond to a valid DsElectId
 /// std::nullopt is returned
-std::optional<DsElecId> decodeDsElecId(uint16_t code);
+std::optional<DsCruId> decodeDsCruId(uint16_t code);
 
-/// Creates (if possible) a DsElecId object from a string representation
+/// Creates (if possible) a DsCruId object from a string representation
 /// If the string does not correspond to a valid DsElectId
 /// std::nullopt is returned
-std::optional<DsElecId> decodeDsElecId(std::string rep);
+std::optional<DsCruId> decodeDsCruId(std::string rep);
 
-/// Returns the channel number of a full string representation of (DsElecId,channel)
-/// If the string does not correspond to a valid (DsElecId,channel) pair then
+/// Returns the channel number of a full string representation of (DsCruId,channel)
+/// If the string does not correspond to a valid (DsCruId,channel) pair then
 /// std::nullopt is returned
-std::optional<uint8_t> decodeChannelId(std::string rep);
+//std::optional<uint8_t> decodeChannelId(std::string rep);
 
-std::ostream& operator<<(std::ostream& os, const DsElecId& id);
+std::ostream& operator<<(std::ostream& os, const DsCruId& id);
 
-/// Returns a string representation of the given DsElecId
-std::string asString(DsElecId dsId);
+/// Returns a string representation of the given DsCruId
+std::string asString(DsCruId dsId);
 
 /// Extracts the group from the elinkId
-//std::optional<uint8_t> groupFromElinkId(uint8_t elinkId);
+std::optional<uint8_t> groupFromElinkId(uint8_t elinkId);
 
 /// Extracts the index from the elinkId
-//std::optional<uint8_t> indexFromElinkId(uint8_t elinkId);
+std::optional<uint8_t> indexFromElinkId(uint8_t elinkId);
 
 } // namespace o2::mch::raw
 

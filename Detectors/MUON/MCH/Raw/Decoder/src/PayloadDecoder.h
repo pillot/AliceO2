@@ -15,6 +15,7 @@
 #include "DumpBuffer.h"
 #include "Headers/RAWDataHeader.h"
 #include "MCHRawDecoder/Decoder.h"
+#include "MCHRawElecMap/CruLinkId.h"
 #include "MakeArray.h"
 #include "PayloadDecoder.h"
 #include "UserLogicGBTDecoder.h"
@@ -22,6 +23,14 @@
 #include <fmt/format.h>
 #include <gsl/span>
 #include <iostream>
+
+namespace
+{
+bool hasOrbitJump(uint32_t orb1, uint32_t orb2)
+{
+  return std::abs(static_cast<long int>(orb1 - orb2)) > 1;
+}
+} // namespace
 
 namespace o2
 {
@@ -47,8 +56,9 @@ class PayloadDecoder
   void reset();
 
  private:
-  std::map<uint16_t, GBTDECODER> mDecoders; //< helper decoders
+  std::optional<GBTDECODER> mDecoder; //< helper decoders
   SampaChannelHandler mChannelHandler;
+  uint32_t mOrbit{0};
 };
 
 template <typename RDH, typename GBTDECODER>
@@ -60,22 +70,28 @@ PayloadDecoder<RDH, GBTDECODER>::PayloadDecoder(SampaChannelHandler channelHandl
 template <typename RDH, typename GBTDECODER>
 size_t PayloadDecoder<RDH, GBTDECODER>::process(const RDH& rdh, gsl::span<uint8_t> buffer)
 {
-  auto solarId = rdh.feeId;
-  //std::cout << "[PayloadDecoder] solarId = rdh.feeId = " << int(solarId) << std::endl;
-  auto c = mDecoders.find(solarId);
-  if (c == mDecoders.end()) {
-    mDecoders.emplace(solarId, GBTDECODER(solarId, mChannelHandler));
-    c = mDecoders.find(solarId);
+  if (hasOrbitJump(rdhOrbit(rdh), mOrbit)) {
+    //std::cout << "Has orbit jump" << std::endl;
+    reset();
+  } else if (rdhOrbit(rdh) != mOrbit) {
+    //std::cout << "diff mOrbit" << std::endl;
   }
-  return c->second.append(buffer);
+  mOrbit = rdhOrbit(rdh);
+
+  int cruId = rdh.feeId & 0xFF;
+  int linkId = rdh.linkID;
+  uint32_t cruLinkId = o2::mch::raw::encode(o2::mch::raw::CruLinkId(cruId, linkId));
+  //std::cout << "[PayloadDecoder] solarId = rdh.feeId = " << int(cruId) << std::endl;
+  if(!mDecoder.has_value()) {
+    mDecoder.emplace(GBTDECODER(cruLinkId, mChannelHandler));
+  }
+  return mDecoder.value().append(buffer);
 }
 
 template <typename RDH, typename GBTDECODER>
 void PayloadDecoder<RDH, GBTDECODER>::reset()
 {
-  for (auto& c : mDecoders) {
-    c.second.reset();
-  }
+  if(mDecoder.has_value()) mDecoder.value().reset();
 }
 
 } // namespace raw

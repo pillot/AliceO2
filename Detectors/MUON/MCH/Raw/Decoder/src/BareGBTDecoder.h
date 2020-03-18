@@ -40,9 +40,9 @@ class BareGBTDecoder
   static constexpr uint8_t baseSize{128};
 
   /// Constructor.
-  /// \param solarId
+  /// \param linkId
   /// \param sampaChannelHandler the callable that will handle each SampaCluster
-  BareGBTDecoder(uint16_t solarId, SampaChannelHandler sampaChannelHandler);
+  BareGBTDecoder(uint16_t linkId, SampaChannelHandler sampaChannelHandler);
 
   /** @name Main interface 
     */
@@ -72,7 +72,7 @@ class BareGBTDecoder
   void append(uint32_t, int, int);
 
  private:
-  int mSolarId;
+  int mLinkId;
   std::array<BareElinkDecoder<CHARGESUM>, 40> mElinks;
   int mNofGbtWordsSeens;
 };
@@ -80,10 +80,10 @@ class BareGBTDecoder
 using namespace boost::multiprecision;
 
 template <typename CHARGESUM>
-BareGBTDecoder<CHARGESUM>::BareGBTDecoder(uint16_t solarId,
+BareGBTDecoder<CHARGESUM>::BareGBTDecoder(uint16_t linkId,
                                           SampaChannelHandler sampaChannelHandler)
-  : mSolarId{solarId},
-    mElinks{impl::makeArray<40>([=](uint8_t i) { return BareElinkDecoder<CHARGESUM>(DsElecId{solarId, static_cast<uint8_t>(i / 5), static_cast<uint8_t>(i % 5)}, sampaChannelHandler); })},
+  : mLinkId{linkId},
+    mElinks{impl::makeArray<40>([=](uint8_t i) { return BareElinkDecoder<CHARGESUM>(DsCruId{linkId, static_cast<uint8_t>(i / 5), static_cast<uint8_t>(i % 5)}, sampaChannelHandler); })},
     mNofGbtWordsSeens{0}
 {
 }

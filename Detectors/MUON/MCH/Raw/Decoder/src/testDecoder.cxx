@@ -37,7 +37,7 @@ std::optional<RAWDataHeaderV4> handleRDH(const RAWDataHeaderV4& rdh)
 
 SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result)
 {
-  return [&result](DsElecId dsId, uint8_t channel, SampaCluster sc) {
+  return [&result](DsCruId dsId, uint8_t channel, SampaCluster sc) {
     result.emplace_back(fmt::format("{}-ch-{}-ts-{}-q-{}", asString(dsId), channel, sc.timestamp, sc.chargeSum));
   };
 }
@@ -51,11 +51,11 @@ BOOST_AUTO_TEST_CASE(Test0)
   RawDataHeaderHandler<RAWDataHeaderV4> rh;
   SampaChannelHandler ch;
 
-  auto d = createDecoder<BareFormat, ChargeSumMode, RAWDataHeaderV4>(rh, ch);
+  auto d = createDecoder<ChargeSumMode, RAWDataHeaderV4>(rh, ch);
 
-  createDecoder<BareFormat, ChargeSumMode, RAWDataHeaderV4>(handleRDH, ch);
-  createDecoder<BareFormat, SampleMode, RAWDataHeaderV4>(
-    handleRDH, [](DsElecId dsId, uint8_t channel, SampaCluster sc) {
+  createDecoder<ChargeSumMode, RAWDataHeaderV4>(handleRDH, ch);
+  createDecoder<SampleMode, RAWDataHeaderV4>(
+    handleRDH, [](DsCruId dsId, uint8_t channel, SampaCluster sc) {
     });
 }
 
@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE(TestDecoding)
 
   };
 
-  auto decode = createDecoder<BareFormat, ChargeSumMode, RAWDataHeaderV4>(handleRDH, handlePacketStoreAsVec(result));
+  auto decode = createDecoder<ChargeSumMode, RAWDataHeaderV4>(handleRDH, handlePacketStoreAsVec(result));
   decode(testBuffer);
 
   BOOST_CHECK_EQUAL(result.size(), expected.size());
