@@ -103,6 +103,7 @@ o2_add_library(Framework
                                      CURL::libcurl
                                      FairMQ::FairMQ
                                      O2::CommonUtils
+                                     O2::MathUtils
                                      O2::FrameworkFoundation
                                      O2::Headers
                                      O2::MemoryResources
@@ -260,6 +261,7 @@ foreach(w
         SimpleStringProcessing
         SimpleTimer
         SimpleWildcard
+        SimpleWildcard02
         SingleDataSource
         Task
         ExternalFairMQDeviceWorkflow

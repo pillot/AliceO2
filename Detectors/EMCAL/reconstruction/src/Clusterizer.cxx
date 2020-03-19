@@ -11,6 +11,7 @@
 /// \file Clusterizer.cxx
 /// \brief Implementation of the EMCAL clusterizer
 #include <cstring>
+#include <gsl/span>
 #include "FairLogger.h" // for LOG
 #include "EMCALReconstruction/Clusterizer.h"
 
@@ -121,7 +122,7 @@ void Clusterizer<InputType>::getTopologicalRowColumn(const InputType& input, int
 /// Return number of found clusters. Start clustering from highest energy cell.
 //____________________________________________________________________________
 template <class InputType>
-void Clusterizer<InputType>::findClusters(const std::vector<InputType>& inputArray)
+void Clusterizer<InputType>::findClusters(const gsl::span<InputType const>& inputArray)
 {
   mFoundClusters.clear();
   mInputIndices.clear();
@@ -172,7 +173,6 @@ void Clusterizer<InputType>::findClusters(const std::vector<InputType>& inputArr
 
   // Sort struct arrays with ascending energy
   std::sort(mSeedList.begin(), std::next(std::begin(mSeedList), nCells));
-  //std::sort(mSeedList, mSeedList+nCells);
 
   // Take next valid cell/digit in calorimeter as seed (in descending energy order)
   for (int i = nCells; i--;) {

@@ -14,6 +14,7 @@
 #include "Framework/ASoA.h"
 #include "Framework/StructToTuple.h"
 #include "Framework/FunctionalHelpers.h"
+#include "Framework/VariantHelpers.h"
 
 // Apparently needs to be on top of the arrow includes.
 #include <sstream>
@@ -57,7 +58,8 @@ struct ConversionTraits {
     using ArrowType = ::arrow::ArrowType_;          \
   };
 
-O2_ARROW_STL_CONVERSION(bool, BooleanType)
+// FIXME: for now we use Int8 to store booleans
+O2_ARROW_STL_CONVERSION(bool, Int8Type)
 O2_ARROW_STL_CONVERSION(int8_t, Int8Type)
 O2_ARROW_STL_CONVERSION(int16_t, Int16Type)
 O2_ARROW_STL_CONVERSION(int32_t, Int32Type)
@@ -242,6 +244,17 @@ auto tuple_to_pack(std::tuple<ARGS...>&&)
 class TableBuilder
 {
   template <typename... ARGS>
+  using BuildersTuple = typename std::tuple<std::unique_ptr<typename BuilderTraits<ARGS>::BuilderType>...>;
+
+  /// Get the builders, assumning they were created with a given pack
+  ///  of basic types
+  template <typename... ARGS>
+  auto getBuilders(o2::framework::pack<ARGS...> pack)
+  {
+    return (BuildersTuple<ARGS...>*)mBuilders;
+  }
+
+  template <typename... ARGS>
   void validate(std::vector<std::string> const& columnNames)
   {
     constexpr int nColumns = sizeof...(ARGS);
@@ -256,10 +269,9 @@ class TableBuilder
   template <typename... ARGS>
   auto makeBuilders(std::vector<std::string> const& columnNames, size_t nRows)
   {
-    using BuildersTuple = typename std::tuple<std::unique_ptr<typename BuilderTraits<ARGS>::BuilderType>...>;
     mSchema = std::make_shared<arrow::Schema>(TableBuilderHelpers::makeFields<ARGS...>(columnNames));
 
-    BuildersTuple* builders = new BuildersTuple(BuilderMaker<ARGS>::make(mMemoryPool)...);
+    auto builders = new BuildersTuple<ARGS...>(BuilderMaker<ARGS>::make(mMemoryPool)...);
     if (nRows != -1) {
       auto seq = std::make_index_sequence<sizeof...(ARGS)>{};
       TableBuilderHelpers::reserveAll(*builders, nRows, seq);
@@ -270,8 +282,7 @@ class TableBuilder
   template <typename... ARGS>
   auto makeFinalizer()
   {
-    using BuildersTuple = typename std::tuple<std::unique_ptr<typename BuilderTraits<ARGS>::BuilderType>...>;
-    mFinalizer = [schema = mSchema, &arrays = mArrays, builders = (BuildersTuple*)mBuilders]() -> std::shared_ptr<arrow::Table> {
+    mFinalizer = [schema = mSchema, &arrays = mArrays, builders = (BuildersTuple<ARGS...>*)mBuilders]() -> std::shared_ptr<arrow::Table> {
       auto status = TableBuilderHelpers::finalize(arrays, *builders, std::make_index_sequence<sizeof...(ARGS)>{});
       if (status == false) {
         throw std::runtime_error("Unable to finalize");
@@ -313,7 +324,6 @@ class TableBuilder
   template <typename... ARGS>
   auto persistTuple(framework::pack<ARGS...>, std::vector<std::string> const& columnNames)
   {
-    using BuildersTuple = typename std::tuple<std::unique_ptr<typename BuilderTraits<ARGS>::BuilderType>...>;
     constexpr int nColumns = sizeof...(ARGS);
     validate<ARGS...>(columnNames);
     mArrays.resize(nColumns);
@@ -321,7 +331,7 @@ class TableBuilder
     makeFinalizer<ARGS...>();
 
     // Callback used to fill the builders
-    return [builders = (BuildersTuple*)mBuilders](unsigned int slot, std::tuple<typename BuilderMaker<ARGS>::FillType...> const& t) -> void {
+    return [builders = (BuildersTuple<ARGS...>*)mBuilders](unsigned int slot, std::tuple<typename BuilderMaker<ARGS>::FillType...> const& t) -> void {
       auto status = TableBuilderHelpers::append(*builders, std::index_sequence_for<ARGS...>{}, t);
       if (status == false) {
         throw std::runtime_error("Unable to append");
@@ -352,7 +362,6 @@ class TableBuilder
   template <typename... ARGS>
   auto preallocatedPersist(std::vector<std::string> const& columnNames, int nRows)
   {
-    using BuildersTuple = typename std::tuple<std::unique_ptr<typename BuilderTraits<ARGS>::BuilderType>...>;
     constexpr int nColumns = sizeof...(ARGS);
     validate<ARGS...>(columnNames);
     mArrays.resize(nColumns);
@@ -360,7 +369,7 @@ class TableBuilder
     makeFinalizer<ARGS...>();
 
     // Callback used to fill the builders
-    return [builders = (BuildersTuple*)mBuilders](unsigned int slot, typename BuilderMaker<ARGS>::FillType... args) -> void {
+    return [builders = (BuildersTuple<ARGS...>*)mBuilders](unsigned int slot, typename BuilderMaker<ARGS>::FillType... args) -> void {
       TableBuilderHelpers::unsafeAppend(*builders, std::index_sequence_for<ARGS...>{}, std::forward_as_tuple(args...));
     };
   }
@@ -368,17 +377,33 @@ class TableBuilder
   template <typename... ARGS>
   auto bulkPersist(std::vector<std::string> const& columnNames, size_t nRows)
   {
-    using BuildersTuple = typename std::tuple<std::unique_ptr<typename BuilderTraits<ARGS>::BuilderType>...>;
     constexpr int nColumns = sizeof...(ARGS);
     validate<ARGS...>(columnNames);
     mArrays.resize(nColumns);
     makeBuilders<ARGS...>(columnNames, nRows);
     makeFinalizer<ARGS...>();
 
-    return [builders = (BuildersTuple*)mBuilders](unsigned int slot, size_t batchSize, typename BuilderMaker<ARGS>::FillType const*... args) -> void {
+    return [builders = (BuildersTuple<ARGS...>*)mBuilders](unsigned int slot, size_t batchSize, typename BuilderMaker<ARGS>::FillType const*... args) -> void {
       TableBuilderHelpers::bulkAppend(*builders, batchSize, std::index_sequence_for<ARGS...>{}, std::forward_as_tuple(args...));
     };
   }
+
+  /// Reserve method to expand the columns as needed.
+  template <typename... ARGS>
+  auto reserve(o2::framework::pack<ARGS...> pack, int s)
+  {
+    visitBuilders(pack, overloaded{[s](auto& builder) { return builder.Reserve(s).ok(); }});
+  }
+
+  /// Invoke the appropriate visitor on the various builders
+  template <typename... ARGS, typename V>
+  auto visitBuilders(o2::framework::pack<ARGS...> pack, V&& visitor)
+  {
+    auto builders = getBuilders(pack);
+    auto visitAll = [visitor](std::unique_ptr<typename BuilderTraits<ARGS>::BuilderType>&... args) { (visitor(*args), ...); };
+    return std::apply(visitAll, *builders);
+  }
+
 
   /// Actually creates the arrow::Table from the builders
   std::shared_ptr<arrow::Table> finalize();

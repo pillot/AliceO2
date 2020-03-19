@@ -133,6 +133,7 @@ BOOST_AUTO_TEST_CASE(TestTableBuilderMore)
   using namespace o2::framework;
   TableBuilder builder;
   auto rowWriter = builder.persist<int, float, std::string, bool>({"x", "y", "s", "b"});
+  builder.reserve(pack<int, float, std::string, bool>{}, 5);
   rowWriter(0, 0, 0., "foo", true);
   rowWriter(0, 1, 1., "bar", false);
   rowWriter(0, 2, 2., "fbr", false);
@@ -151,7 +152,7 @@ BOOST_AUTO_TEST_CASE(TestTableBuilderMore)
   BOOST_REQUIRE_EQUAL(table->column(0)->type()->id(), arrow::int32()->id());
   BOOST_REQUIRE_EQUAL(table->column(1)->type()->id(), arrow::float32()->id());
   BOOST_REQUIRE_EQUAL(table->column(2)->type()->id(), arrow::utf8()->id());
-  BOOST_REQUIRE_EQUAL(table->column(3)->type()->id(), arrow::boolean()->id());
+  BOOST_REQUIRE_EQUAL(table->column(3)->type()->id(), arrow::int8()->id());
 }
 
 // Use RDataFrame to build the table

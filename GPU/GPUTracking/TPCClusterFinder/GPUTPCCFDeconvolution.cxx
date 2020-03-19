@@ -15,6 +15,7 @@
 #include "CfConsts.h"
 #include "CfUtils.h"
 #include "ChargePos.h"
+#include "GPUDefMacros.h"
 
 using namespace GPUCA_NAMESPACE::gpu;
 
@@ -127,6 +128,7 @@ GPUd() char GPUTPCCFDeconvolution::countPeaksAroundDigit(
   char peakCount = 0;
 
   uchar aboveThreshold = 0;
+  GPUCA_UNROLL(, U())
   for (uchar i = 0; i < 8; i++) {
     Delta2 d = CfConsts::InnerNeighbors[i];
 
@@ -139,6 +141,7 @@ GPUd() char GPUTPCCFDeconvolution::countPeaksAroundDigit(
     return peakCount;
   }
 
+  GPUCA_UNROLL(, U())
   for (uchar i = 0; i < 16; i++) {
     Delta2 d = CfConsts::OuterNeighbors[i];
 
@@ -156,6 +159,7 @@ GPUd() char GPUTPCCFDeconvolution::countPeaksScratchpadInner(
   uchar* aboveThreshold)
 {
   char peaks = 0;
+  GPUCA_UNROLL(, U())
   for (uchar i = 0; i < 8; i++) {
     uchar p = isPeak[ll * 8 + i];
     peaks += GET_IS_PEAK(p);
@@ -172,6 +176,7 @@ GPUd() char GPUTPCCFDeconvolution::countPeaksScratchpadOuter(
   const uchar* isPeak)
 {
   char peaks = 0;
+  GPUCA_UNROLL(, U())
   for (uchar i = 0; i < 16; i++) {
     uchar p = isPeak[ll * 16 + i];
     peaks += GET_IS_PEAK(p);
