@@ -29,6 +29,7 @@
 #include "Framework/ControlService.h"
 #include "Framework/Task.h"
 #include "Framework/runDataProcessing.h"
+#include "DPLUtils/DPLRawParser.h"
 #include "MCHBase/Digit.h"
 #include "DataDecoderSpec.h"
 #include "RawBufferDecoder.h"
@@ -55,11 +56,80 @@ public:
     bool verbose = false;
     // get the input buffer
 
+    std::vector<o2::mch::Digit> digits;
+
+    auto& inputs = pc.inputs();
+
+    DPLRawParser parser(inputs, o2::framework::select("TF:MCH/RAWDATA"));
+
+    for (auto it = parser.begin(), end = parser.end(); it != end; ++it) {
+      // retrieving RDH v4
+      auto const* rdh = it.get_if<o2::header::RAWDataHeaderV4>();
+      // retrieving the raw pointer of the page
+      auto const* raw = it.raw();
+      // retrieving payload pointer of the page
+      auto const* payload = it.data();
+      // size of payload
+      size_t payloadSize = it.size();
+      // offset of payload in the raw page
+      size_t offset = it.offset();
+
+      if( payloadSize == 0 ) continue;
+
+
+      //std::cout<<"\n\npayloadSize: "<<payloadSize<<std::endl;
+      //std::cout<<"raw:     "<<(void*)raw<<std::endl;
+      //std::cout<<"payload: "<<(void*)payload<<std::endl;
+
+      std::vector<uint8_t> buffer((uint8_t*)raw, ((uint8_t*)raw)+payloadSize+sizeof(o2::header::RAWDataHeaderV4));
+      decoder.decodeBuffer(buffer, digits);
+    }
+
+    for (auto&& input : pc.inputs()) {
+      //QcInfoLogger::GetInstance() << "run RawDataProcessor: input " << input.spec->binding << AliceO2::InfoLogger::InfoLogger::endm;
+
+      if (input.spec->binding != "readout")
+        continue;
+
+      const auto* header = o2::header::get<header::DataHeader*>(input.header);
+      if (!header)
+        continue;
+
+      //std::cout<<"payloadSize: "<<header->payloadSize<<std::endl;
+
+      std::vector<uint8_t> buffer((uint8_t*)input.payload, ((uint8_t*)input.payload)+header->payloadSize);
+      decoder.decodeBuffer(buffer, digits);
+    }
+
+    if(false) {
+    for (auto d : digits) {
+      std::cout <<
+          " DE# " << d.getDetID() <<
+          " PadId " << d.getPadID() <<
+          " ADC " << d.getADC() <<
+          " time "<< d.getTimeStamp() <<
+          std::endl;
+    }
+    }
+
+    const size_t OUT_SIZE = sizeof(o2::mch::Digit) * digits.size();
+
+    /// send the output buffer via DPL
+    char* outbuffer = NULL;
+    outbuffer = (char*)realloc(outbuffer, OUT_SIZE);
+    memcpy(outbuffer, digits.data(), OUT_SIZE);
+
+    // create the output message
+    auto freefct = [](void* data, void*) { free(data); };
+    pc.outputs().adoptChunk(Output{ "MCH", "DIGITS", 0 }, outbuffer, OUT_SIZE, freefct, nullptr);
+
+    /*
     auto msgIn = pc.inputs().get<gsl::span<char>>("readout");
     auto bufferPtrIn = msgIn.data();
     auto sizeIn = msgIn.size();
 
-    if(verbose) std::cout << "We got the input buffer" << std::endl;
+    //if(verbose)
+      std::cout << "We got the input buffer, sizeIn: " << sizeIn << std::endl;
 
     //std::vector<uint8_t> buffer(sizeIn);
     std::vector<uint8_t> buffer((uint8_t*)bufferPtrIn, ((uint8_t*)bufferPtrIn)+sizeIn);
@@ -75,9 +145,10 @@ public:
     const int OUT_SIZE = outsize;
 
     // create the output message
-    auto freefct = [](void* data, void* /*hint*/) { free(data); };
+    auto freefct = [](void* data, void*) { free(data); };
     pc.outputs().adoptChunk(Output{ "MCH", "DIGITS", 0 }, (char*)outbuffer, OUT_SIZE, freefct, nullptr);
     //exit(0);
+    */
   }
 
 private:
@@ -94,7 +165,8 @@ WorkflowSpec defineDataProcessing(const ConfigContext&)
   DataProcessorSpec producer{
     "DataDecoder",
     //Inputs{InputSpec{"readout", "ROUT", "RAWDATA", Lifetime::Timeframe}},
-    o2::framework::select("readout:ROUT/RAWDATA"),
+    o2::framework::select("TF:MCH/RAWDATA"),
+    //o2::framework::select("readout:ROUT/RAWDATA"),
     Outputs{OutputSpec{"MCH", "DIGITS", 0, Lifetime::Timeframe}},
     AlgorithmSpec{adaptFromTask<DataDecoderTask>()},
     Options{}

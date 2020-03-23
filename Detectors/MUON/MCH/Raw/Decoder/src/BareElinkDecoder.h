@@ -126,8 +126,12 @@ class BareElinkDecoder
   std::vector<uint16_t> mSamples;
   uint32_t mClusterSum;
   uint64_t mMask;
+  uint64_t mSync;
+
 
   State mState; //< the state we are in
+  bool verbose;
+  uint64_t mCurBit;
 };
 
 constexpr int HEADERSIZE = 50;
@@ -171,8 +175,12 @@ BareElinkDecoder<CHARGESUM>::BareElinkDecoder(DsCruId dsId,
     mSamples{},
     mClusterSum{},
     mState{State::LookingForSync},
-    mMask{1}
+    mMask{1},
+    verbose{false}, mCurBit{0}
 {
+  mSync = sampaSync().uint64();
+  //if(dsId.elinkId() == 2) verbose = true;
+  //else verbose = false;
 }
 
 template <typename CHARGESUM>
@@ -182,7 +190,9 @@ void BareElinkDecoder<CHARGESUM>::appendOneBit(bool bit)
 
   mBitBuffer += bit * mMask;
   mMask *= 2;
+  mCurBit += 1;
 
+  if(verbose) std::cout << fmt::format("[appendOneBit] bit {}: {}   bitBuffer={:08X} mask={} checkpoint={}\n", (int)mCurBit, (int)bit, mBitBuffer, mMask, mCheckpoint);
   if (mMask == mCheckpoint) {
     process();
   }
@@ -208,6 +218,7 @@ void BareElinkDecoder<CHARGESUM>::clear(int checkpoint)
   mBitBuffer = 0;
   mCheckpoint = static_cast<uint64_t>(1) << checkpoint;
   mMask = 1;
+  mCurBit = 0;
 }
 
 /// findSync checks if the last 50 bits of the bit stream
@@ -218,13 +229,15 @@ void BareElinkDecoder<CHARGESUM>::clear(int checkpoint)
 template <typename CHARGESUM>
 void BareElinkDecoder<CHARGESUM>::findSync()
 {
-  const uint64_t sync = sampaSync().uint64();
   assert(mState == State::LookingForSync);
-  if (mBitBuffer != sync) {
+  if(verbose) std::cout << fmt::format("[findSync] bitBuffer={:08X} sync={:08X}\n", mBitBuffer, mSync);
+  if (mBitBuffer != mSync) {
     mBitBuffer >>= 1;
     mMask /= 2;
+    mCurBit -= 1;
     return;
   }
+  if(verbose) std::cout << fmt::format("[findSync] SYNC found\n");
   changeState(State::LookingForHeader, HEADERSIZE);
   mNofSync++;
 }
@@ -234,9 +247,10 @@ void BareElinkDecoder<CHARGESUM>::handleHeader()
 {
   assert(mState == State::LookingForHeader);
 
+  if(verbose) std::cout << fmt::format("[handleHeader] bitBuffer={:08X} sync={:08X}\n", mBitBuffer, mSync);
   // check if the current 50-bit word is a SYNC, and skip it if that's the case
-  const uint64_t sync = sampaSync().uint64();
-  if (mBitBuffer == sync) {
+  if (mBitBuffer == mSync) {
+    if(verbose) std::cout << fmt::format("[handleHeader] SYNC found\n");
     mNofSync++;
     softReset();
     return;
@@ -244,6 +258,7 @@ void BareElinkDecoder<CHARGESUM>::handleHeader()
 
 
   mSampaHeader.uint64(mBitBuffer);
+  if(verbose) std::cout << fmt::format("[handleHeader] SAMPA header found, bitBuffer={:08X} type={}\n", mBitBuffer, mSampaHeader.packetType());
 
   ++mNofHeaderSeen;
 
@@ -262,6 +277,7 @@ void BareElinkDecoder<CHARGESUM>::handleHeader()
       // so we fallthrough the simple Data case
     case SampaPacketType::Data:
       mNof10BitsWordsToRead = mSampaHeader.nof10BitWords();
+      if(verbose) std::cout << fmt::format("[handleHeader] data header found, nof10BitsWordsToRead={}\n", mNof10BitsWordsToRead);
       changeState(State::ReadingNofSamples, 10);
       break;
     case SampaPacketType::Sync:

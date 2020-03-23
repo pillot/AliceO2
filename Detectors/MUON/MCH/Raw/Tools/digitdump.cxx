@@ -61,10 +61,10 @@ void digitdump(std::string input, DumpOptions opt)
   size_t npages{0};
   size_t outsize;
 
-  RawBufferDecoder<CHARGESUM, RDH> decoder(true);
+  RawBufferDecoder<CHARGESUM, RDH> decoder(false);
   while (npages < opt.maxNofRDHs() && in.read(reinterpret_cast<char*>(&buffer[0]), pageSize)) {
     npages++;
-    char* outbuffer = decoder.decodeBuffer(buffer, outsize);
+    //char* outbuffer = decoder.decodeBuffer(buffer, outsize);
   }
     
   return;

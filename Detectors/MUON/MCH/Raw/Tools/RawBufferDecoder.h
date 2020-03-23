@@ -77,16 +77,14 @@ public:
     cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperGenerated>();
   }
 
-  char* decodeBuffer(std::vector<uint8_t> &buffer, size_t& outsize)
+  void decodeBuffer(std::vector<uint8_t> &buffer, std::vector<o2::mch::Digit> &digits)
   {
     //bool verbose = false;
     gsl::span<uint8_t> sbuffer(buffer);
 
-    outsize = 0;
-
     size_t ndigits{0};
 
-    std::vector< std::unique_ptr<o2::mch::Digit> > digits;
+    //std::vector< std::unique_ptr<o2::mch::Digit> > digits;
     //if(verbose) std::cout << "On nettoie le vector digits" << std::endl;
 
 
@@ -132,14 +130,14 @@ public:
 
       int time = 0;
 
-      digits.push_back( std::make_unique<o2::mch::Digit>() );
-      o2::mch::Digit* mchdigit = digits.back().get();
-      mchdigit->setDetID(deId);
-      mchdigit->setPadID(padId);
-      mchdigit->setADC(digitadc);
-      mchdigit->setTimeStamp(time);
+      digits.emplace_back( o2::mch::Digit() );
+      o2::mch::Digit& mchdigit = digits.back();
+      mchdigit.setDetID(deId);
+      mchdigit.setPadID(padId);
+      mchdigit.setADC(digitadc);
+      mchdigit.setTimeStamp(time);
 
-      if(verbose) std::cout << "DIGIT STORED:\nADC " << digits.back().get()->getADC() << " DE# " << digits.back().get()->getDetID() << " PadId " << digits.back().get()->getPadID() << " time "<< digits.back().get()->getTimeStamp() << std::endl;
+      if(verbose) std::cout << "DIGIT STORED:\nADC " << digits.back().getADC() << " DE# " << digits.back().getDetID() << " PadId " << digits.back().getPadID() << " time "<< digits.back().getTimeStamp() << std::endl;
 
       // std::cout << "For this digit we obtained a padId of " << padId << std::endl;
       ++ndigits;
@@ -161,7 +159,7 @@ public:
       //}
       r.feeId = cruId; //solar.value();
       if(verbose)
-        std::cout << "\n\n===============\nRDH INFO: CRUID " << cruId << " LINKID " << int(linkId) << " ORBIT "<< rdhOrbit(rdh) << std::endl;
+        std::cout << "RDH INFO: CRUID " << cruId << " LINKID " << int(linkId) << " ORBIT "<< rdhOrbit(rdh) << std::endl;
       return r;
     };
 
@@ -173,8 +171,7 @@ public:
 
     decStat = decode(sbuffer);
 
-    //A ce stade, on a un vecteur de digits rempli. On doit pouvoir le metrre dans un buffer et l'envoyer.
-
+    /*
     if(verbose) std::cout << "Filling buffer of digits ["<<ndigits<<"]..." << std::endl;
 
     o2::mch::Digit* digitsBuffer = NULL;
@@ -194,6 +191,7 @@ public:
     }
 
     return (char*)digitsBuffer;
+    */
   }
 };
 
