@@ -8,8 +8,8 @@
 #include "MCHMappingInterface/Segmentation.h"
 #include "MCHMappingInterface/CathodeSegmentation.h"
 #include "MCHBase/Digit.h"
-#include "MCHPreClustering/PreClusterBlock.h"
-#include "MCHPreClustering/PreClusterFinder.h"
+#include "MCHBase/PreClusterBlock.h"
+//#include "MCHPreClustering/PreClusterFinder.h"
 #include "DigitsFileReader.h"
 #include "MCHClustering/ClusteringForTest.h"
 

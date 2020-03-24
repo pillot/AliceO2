@@ -12,8 +12,7 @@
 
 #include "MCHBase/Digit.h"
 //#include "MCHBase/DigitBlock.h"
-#include "MCHPreClustering/PreClusterBlock.h"
-#include "MCHPreClustering/PreClusterFinder.h"
+#include "MCHBase/PreClusterBlock.h"
 #include "DigitsFileReader.h"
 #include "MCHClustering/ClusteringForTest.h"
 
