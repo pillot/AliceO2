@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "MCHBase/Digit.h"
+#include "MCHBase/PreClusterBlock.h"
 
 #include "PreClusterFinderMapping.h"
 
@@ -61,6 +62,7 @@ class PreClusterFinder
   int getNPreClusters(int iDE, int iPlane);
   const PreCluster* getPreCluster(int iDE, int iPlane, int iCluster);
   const Digit* getDigit(int iDE, uint16_t iOrderedPad);
+  void getPreClusters(std::vector<PreClusterStruct>& preClusters, std::vector<Digit>& digits);
 
   /// return the number of detection elements in the internal structure
   static constexpr int getNDEs() { return SNDEs; }

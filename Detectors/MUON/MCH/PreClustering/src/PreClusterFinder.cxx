@@ -129,6 +129,51 @@ int PreClusterFinder::run()
 }
 
 //_________________________________________________________________________________________________
+void PreClusterFinder::getPreClusters(std::vector<PreClusterStruct>& preClusters, std::vector<Digit>& digits)
+{
+  /// fill the input vectors with the preclusters and associated digits
+
+  preClusters.clear();
+  digits.clear();
+
+  // prepare the vector of digits to receive all the digits
+  // to avoid losing pointers because of memory reallocation
+  int nUsedDigits(0);
+  getNDEWithPreClusters(nUsedDigits);
+  digits.reserve(nUsedDigits);
+
+  for (int iDE = 0, nDEs = SNDEs; iDE < nDEs; ++iDE) {
+
+    DetectionElement& de(mDEs[iDE]);
+    if (de.nOrderedPads[1] == 0) {
+      continue;
+    }
+
+    for (int iPlane = 0; iPlane < 2; ++iPlane) {
+      for (int iCluster = 0; iCluster < mNPreClusters[iDE][iPlane]; ++iCluster) {
+
+        PreCluster* cluster = mPreClusters[iDE][iPlane][iCluster].get();
+        if (!cluster->storeMe) {
+          continue;
+        }
+
+        // index of the first digit of this precluster to be added
+        auto firstDigit = digits.size();
+
+        // add the digits of this precluster
+        for (uint16_t iOrderedPad = cluster->firstPad; iOrderedPad <= cluster->lastPad; ++iOrderedPad) {
+          digits.emplace_back(*de.digits[de.mapping->pads[de.orderedPads[1][iOrderedPad]].iDigit]);
+        }
+
+        // add this precluster
+        uint16_t nDigits = cluster->lastPad - cluster->firstPad + 1;
+        preClusters.push_back({nDigits, &digits[firstDigit]});
+      }
+    }
+  }
+}
+
+//_________________________________________________________________________________________________
 void PreClusterFinder::preClusterizeRecursive()
 {
   /// preclusterize both planes of every DE using recursive algorithm
