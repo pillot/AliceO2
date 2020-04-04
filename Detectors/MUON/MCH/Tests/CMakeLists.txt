@@ -8,6 +8,11 @@
 # granted to it by virtue of its status as an Intergovernmental Organization or
 # submit itself to any jurisdiction.
 
+o2_add_executable(tb-digits-reader
+                  COMPONENT_NAME mch
+                  SOURCES src/TBDigitsFileReader.cxx src/TBDigitsFileReaderSpec.cxx src/TBDigitsFileReaderDevice.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2::DPLUtils Boost::program_options O2::MCHBase O2::MCHMappingInterface O2::MCHMappingFactory O2::MCHMappingImpl3)
+
 o2_add_executable(clusterizer-test
                   COMPONENT_NAME mch
                   SOURCES src/ClusterizerTest.cxx src/DigitsFileReader.cxx

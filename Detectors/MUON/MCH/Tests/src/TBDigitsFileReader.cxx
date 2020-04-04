@@ -17,7 +17,12 @@ using namespace o2::mch;
 using namespace std;
 
 
-TBDigitsFileReader::TBDigitsFileReader(std::string inputFileName)
+TBDigitsFileReader::TBDigitsFileReader()
+{
+}
+
+
+void TBDigitsFileReader::init(std::string inputFileName)
 {
   mInputFile.open(inputFileName, ios::binary);
   if (!mInputFile.is_open()) {
@@ -47,6 +52,10 @@ bool TBDigitsFileReader::readDigitsFromFile()
 
   /// send the digits of the current event
 
+  int event, sievent;
+  mInputFile.read(reinterpret_cast<char*>(&event), sizeof(int));
+  mInputFile.read(reinterpret_cast<char*>(&sievent), sizeof(int));
+
   int nDE = 0;
   int DE1 = 0; 
   mInputFile.read(reinterpret_cast<char*>(&nDE), sizeof(int));
@@ -65,8 +74,8 @@ bool TBDigitsFileReader::readDigitsFromFile()
     int npad;
     mInputFile.read(reinterpret_cast<char*>(&npad), sizeof(int));
 
-    int dsId, dsCh, size, time;
-    float charge;
+    int dsId, dsCh, size, time, padX, padY;
+    float charge, posX, posY;
     for(int ih = 0; ih < npad; ih++) {
 
       mInputFile.read(reinterpret_cast<char*>(&dsId), sizeof(int));
@@ -75,8 +84,11 @@ bool TBDigitsFileReader::readDigitsFromFile()
       mInputFile.read(reinterpret_cast<char*>(&time), sizeof(int));
       mInputFile.read(reinterpret_cast<char*>(&charge), sizeof(float));
 
-      printf("B  hit %d  dsid=%d chan=%d  charge=%f  time=%d\n",
-          ih, dsId, dsCh, charge, time);
+      mInputFile.read(reinterpret_cast<char*>(&padX), sizeof(int));
+      mInputFile.read(reinterpret_cast<char*>(&padY), sizeof(int));
+
+      mInputFile.read(reinterpret_cast<char*>(&posX), sizeof(float));
+      mInputFile.read(reinterpret_cast<char*>(&posY), sizeof(float));
 
       uint16_t adc = static_cast<uint16_t>(charge);
 
@@ -87,7 +99,21 @@ bool TBDigitsFileReader::readDigitsFromFile()
       try {
         mapping::Segmentation segment(detId);
         int padId = segment.findPadByFEE(dualSampaId, dualSampaChannel);
-        if(padId < 0) continue;
+        if(padId < 0) {
+          printf("padId: %d\n", padId);
+          continue;
+        }
+
+        float X = segment.padPositionX(padId);
+        float Y = segment.padPositionY(padId);
+
+        if(Y != posY) {
+          printf("B  hit %d  dsid=%d chan=%d  charge=%f  time=%d\n",
+              ih, dsId, dsCh, charge, time);
+          std::cout<<"posY: "<<posY<<"  "<<Y<<std::endl;
+          break;
+        }
+
         //digits.push_back( std::make_unique<Digit>(time, detId, padId, adc) );
         digits.push_back( std::make_unique<Digit>() );
         Digit* mchdigit = digits.back().get();
@@ -99,6 +125,45 @@ bool TBDigitsFileReader::readDigitsFromFile()
       catch(std::exception& e) {
         continue;
       }
+    }
+
+    int nclus;
+    mInputFile.read(reinterpret_cast<char*>(&nclus), sizeof(int));
+
+    for(int ic = 0; ic < nclus; ic++) {
+      clusters.emplace_back();
+      TBCluster& c = clusters.back();
+      //mInputFile.read(reinterpret_cast<char*>(&c), sizeof(TBCluster));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fDir)), sizeof(char));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fNhits)), sizeof(int));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fXNhits)), sizeof(int));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fYNhits)), sizeof(int));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fCharge)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fChargemax)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fXclus)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fYclus)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fXmat)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fYmat)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fYmaterror)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fXmaterror)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fChi2mat)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fChmat)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fYcenter)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fXcenter)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fInversepitch)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fK3x)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fK3y)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fK3yrec)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fPadyMean)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fPadxMean)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fPadySigma)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fPadxSigma)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fTimeMean)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fTimeSigma)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fSizeMean)), sizeof(double));
+      mInputFile.read(reinterpret_cast<char*>(&(c.fSizeSigma)), sizeof(double));
+      //printf("B  clus %d  dir=%d nHits=%d nXHits=%d nYHits=%d Y=%f\n", ic,
+      //    (int)c.fDir, (int)c.fNhits, (int)c.fXNhits, (int)c.fYNhits, c.fYmat);
     }
   }
 

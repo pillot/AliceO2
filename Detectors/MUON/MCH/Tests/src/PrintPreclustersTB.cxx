@@ -9,15 +9,11 @@
 // or submit itself to any jurisdiction.
 
 #include <fstream>
-#include "TCanvas.h"
-#include "TH1F.h"
-#include "TApplication.h"
 
-#include "MCHBase/Digit.h"
-#include "MCHBase/PreCluster.h"
+//#include "MCHBase/Digit.h"
+//#include "MCHBase/PreClusterBlock.h"
 #include "TBDigitsFileReader.h"
 #include "../../PreClustering/src/PreClusterFinder.h"
-#include "MCHClustering/ClusteringForTest.h"
 
 using namespace o2::mch;
 using namespace std;
@@ -27,25 +23,15 @@ int main(int argc, char** argv)
     
   TBDigitsFileReader digitsReader;
   digitsReader.init(argv[1]);
+  ofstream outFile(argv[2],ios::out);
+
   PreClusterFinder preClusterFinder;
-  Clustering clustering;
-  std::vector<float> residuals;
-    
-    TApplication app ("app",&argc,argv);
-    
-    TCanvas *cbell = new TCanvas("cbell","Bell",0,0,600,600);
-    TH1F *h1 = new TH1F("h1", "Residuals distribution from TB data", 50, -0.1, 0.1);
-  
   preClusterFinder.init();
 
   Digit* digitsBuffer = NULL;
-  std::vector<Digit> digits(0);
-  std::vector<PreCluster> preClusters(0);
-  std::vector<Clustering::Cluster> clusters(0);
     
   // load digits from binary input file, block-by-block
   while(digitsReader.readDigitsFromFile()) {
-      clusters.clear();
 
     // get number of loaded digits and store them into a memory buffer
     auto nDigits = digitsReader.getNumberOfDigits();
@@ -64,34 +50,8 @@ int main(int argc, char** argv)
     preClusterFinder.loadDigits({digitsBuffer, nDigits});
     preClusterFinder.run();
 
-    // get the preclusters and associated digits
-    preClusters.clear();
-    digits.clear();
-    preClusterFinder.getPreClusters(preClusters, digits);
-      
-      printf("\n\n==========\nRunning Clustering\n\n");
-
-      // Fit Mathieson
-      clustering.runFinderSimpleFit(preClusters, digits, clusters);
-
-      
-      if(preClusters.size()==1){
-          float yobtenu = clusters[0].gety();
-          float difference = ytrk-yobtenu;
-          h1->Fill(difference);
-            h1->GetXaxis()->SetTitle("Residual y (cm)");
-            h1->GetYaxis()->SetTitle("Count");
-            h1->Draw();
-          cout << "RESIDUAL y: " << difference <<endl;
-
-      }
-
-    //break;
+    outFile<<preClusterFinder<<std::endl;
   }
-    
-    cbell->Update();
-    cbell->Draw();
-              app.Run(kTRUE);
 
   return 0;
 }
