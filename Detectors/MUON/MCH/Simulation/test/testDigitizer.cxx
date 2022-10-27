@@ -34,9 +34,9 @@
 #include <unordered_map>
 
 using IR = o2::InteractionRecord;
-using o2::mch::ROFRecord;
 using o2::mch::Digit;
 using o2::mch::Hit;
+using o2::mch::ROFRecord;
 using o2::mch::mapping::Segmentation;
 
 struct GEOMETRY {
