@@ -35,21 +35,21 @@ class MathiesonOriginal
   MathiesonOriginal& operator=(MathiesonOriginal&&) = default;
 
   /// set the inverse of the anode-cathode pitch
-  void setPitch(float pitch) { mInversePitch = (pitch > 0.) ? 1. / pitch : 0.; }
+  void setPitch(double pitch) { mInversePitch = (pitch > 0.) ? 1. / pitch : 0.; }
 
-  void setSqrtKx3AndDeriveKx2Kx4(float sqrtKx3);
-  void setSqrtKy3AndDeriveKy2Ky4(float sqrtKy3);
+  void setSqrtKx3AndDeriveKx2Kx4(double sqrtKx3);
+  void setSqrtKy3AndDeriveKy2Ky4(double sqrtKy3);
 
-  float integrate(float xMin, float yMin, float xMax, float yMax) const;
+  double integrate(double xMin, double yMin, double xMax, double yMax) const;
 
  private:
-  float mSqrtKx3 = 0.;      ///< Mathieson Sqrt(Kx3)
-  float mKx2 = 0.;          ///< Mathieson Kx2
-  float mKx4 = 0.;          ///< Mathieson Kx4 = Kx1/Kx2/Sqrt(Kx3)
-  float mSqrtKy3 = 0.;      ///< Mathieson Sqrt(Ky3)
-  float mKy2 = 0.;          ///< Mathieson Ky2
-  float mKy4 = 0.;          ///< Mathieson Ky4 = Ky1/Ky2/Sqrt(Ky3)
-  float mInversePitch = 0.; ///< 1 / anode-cathode pitch
+  double mSqrtKx3 = 0.;      ///< Mathieson Sqrt(Kx3)
+  double mKx2 = 0.;          ///< Mathieson Kx2
+  double mKx4 = 0.;          ///< Mathieson Kx4 = Kx1/Kx2/Sqrt(Kx3)
+  double mSqrtKy3 = 0.;      ///< Mathieson Sqrt(Ky3)
+  double mKy2 = 0.;          ///< Mathieson Ky2
+  double mKy4 = 0.;          ///< Mathieson Ky4 = Ky1/Ky2/Sqrt(Ky3)
+  double mInversePitch = 0.; ///< 1 / anode-cathode pitch
 };
 
 } // namespace mch

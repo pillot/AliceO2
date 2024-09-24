@@ -24,29 +24,27 @@ namespace mch
 {
 
 //_________________________________________________________________________________________________
-void MathiesonOriginal::setSqrtKx3AndDeriveKx2Kx4(float sqrtKx3)
+void MathiesonOriginal::setSqrtKx3AndDeriveKx2Kx4(double sqrtKx3)
 {
   /// set the Mathieson parameter sqrt(K3) in x direction, perpendicular to the wires,
   /// and derive the Mathieson parameters K2 and K4 in the same direction
   mSqrtKx3 = sqrtKx3;
   mKx2 = TMath::Pi() / 2. * (1. - 0.5 * mSqrtKx3);
-  float cx1 = mKx2 * mSqrtKx3 / 4. / TMath::ATan(static_cast<double>(mSqrtKx3));
-  mKx4 = cx1 / mKx2 / mSqrtKx3;
+  mKx4 = 0.25 / TMath::ATan(mSqrtKx3);
 }
 
 //_________________________________________________________________________________________________
-void MathiesonOriginal::setSqrtKy3AndDeriveKy2Ky4(float sqrtKy3)
+void MathiesonOriginal::setSqrtKy3AndDeriveKy2Ky4(double sqrtKy3)
 {
   /// set the Mathieson parameter sqrt(K3) in y direction, along the wires,
   /// and derive the Mathieson parameters K2 and K4 in the same direction
   mSqrtKy3 = sqrtKy3;
   mKy2 = TMath::Pi() / 2. * (1. - 0.5 * mSqrtKy3);
-  float cy1 = mKy2 * mSqrtKy3 / 4. / TMath::ATan(static_cast<double>(mSqrtKy3));
-  mKy4 = cy1 / mKy2 / mSqrtKy3;
+  mKy4 = 0.25 / TMath::ATan(mSqrtKy3);
 }
 
 //_________________________________________________________________________________________________
-float MathiesonOriginal::integrate(float xMin, float yMin, float xMax, float yMax) const
+double MathiesonOriginal::integrate(double xMin, double yMin, double xMax, double yMax) const
 {
   /// integrate the Mathieson over x and y in the given area
 
@@ -62,8 +60,8 @@ float MathiesonOriginal::integrate(float xMin, float yMin, float xMax, float yMa
   double uyMin = mSqrtKy3 * TMath::TanH(mKy2 * yMin);
   double uyMax = mSqrtKy3 * TMath::TanH(mKy2 * yMax);
 
-  return static_cast<float>(4. * mKx4 * (TMath::ATan(uxMax) - TMath::ATan(uxMin)) *
-                            mKy4 * (TMath::ATan(uyMax) - TMath::ATan(uyMin)));
+  return 4. * mKx4 * (TMath::ATan(uxMax) - TMath::ATan(uxMin)) *
+         mKy4 * (TMath::ATan(uyMax) - TMath::ATan(uyMin));
 }
 
 } // namespace mch

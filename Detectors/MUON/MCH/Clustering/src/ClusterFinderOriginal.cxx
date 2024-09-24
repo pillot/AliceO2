@@ -1688,7 +1688,7 @@ void ClusterFinderOriginal::param2ChargeFraction(const double param[SNFitParamMa
 }
 
 //_________________________________________________________________________________________________
-float ClusterFinderOriginal::chargeIntegration(double x, double y, const PadOriginal& pad) const
+double ClusterFinderOriginal::chargeIntegration(double x, double y, const PadOriginal& pad) const
 {
   /// integrate the Mathieson over the pad area, assuming the center of the Mathieson is at (x,y)
   double xPad = pad.x() - x;

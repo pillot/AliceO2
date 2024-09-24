@@ -98,7 +98,7 @@ class ClusterFinderOriginal
              int nParamUsed, int& nTrials) const;
   double computeChi2(const double param[SNFitParamMax + 2], int nParamUsed) const;
   void param2ChargeFraction(const double param[SNFitParamMax], int nParamUsed, double fraction[SNFitClustersMax]) const;
-  float chargeIntegration(double x, double y, const PadOriginal& pad) const;
+  double chargeIntegration(double x, double y, const PadOriginal& pad) const;
 
   void split(const TH2D& histMLEM, const std::vector<double>& coef);
   void addPixel(const TH2D& histMLEM, int i0, int j0, std::vector<int>& pixels, std::vector<std::vector<bool>>& isUsed);
