@@ -146,7 +146,7 @@ class DigitsReaderDeviceDPL
       // load the first TF if not already done
       bool loadNextTF = mTreeReader.GetCurrentEntry() < 0;
 
-      while(true) {
+      while (true) {
         // load the next TF if requested
         if (loadNextTF && !mTreeReader.Next()) {
           throw std::invalid_argument(mTreeReader.fgEntryStatusText[mTreeReader.GetEntryStatus()]);
