@@ -87,7 +87,7 @@ class DigitSamplerTask : public io::DigitIOBaseTask
 
     std::vector<ROFRecord> rofs;
     std::vector<Digit> digits;
-    while((mReadIsOk = mDigitSampler->read(digits, rofs))) {
+    while ((mReadIsOk = mDigitSampler->read(digits, rofs))) {
 
       // process the current input TF if requested
       if (shouldProcess()) {
